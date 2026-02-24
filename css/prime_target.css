@@ -3250,86 +3250,363 @@ main {
   color: white;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .episode-premium-card {
-    grid-template-columns: 240px 1fr;
-  }
-
-  .episode-premium-poster {
-    width: 240px;
-    height: 135px;
-  }
+/* Episodes Premium Grid - Desktop Default */
+.episodes-premium-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 }
 
-@media (max-width: 768px) {
+/* ==================== MOBILE EPISODES SLIDER ==================== */
+
+/* Tablet and Mobile - Switch to horizontal slider */
+@media (max-width: 1024px) {
+  .episodes-premium-grid {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 1rem;
+    padding: 0.5rem 0 1.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+    position: relative;
+  }
+
+  .episodes-premium-grid::-webkit-scrollbar {
+    display: none; /* Hide scrollbar Chrome/Safari */
+  }
+
+  /* Episode Cards in Slider */
   .episode-premium-card {
-    grid-template-columns: 1fr;
+    flex: 0 0 calc(33.33% - 0.7rem); /* 3 cards per view on tablet */
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Prevent overflow */
+    height: auto;
+    margin-bottom: 0;
   }
 
   .episode-premium-poster {
     width: 100%;
-    height: 200px;
+    height: auto;
+    aspect-ratio: 16/9;
   }
 
   .episode-premium-info {
-    padding: 1rem;
+    padding: 0.8rem;
   }
 
-  .episode-detail-premium-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  /* Hide desktop-specific elements on mobile */
+  .episode-premium-overlay {
+    display: none; /* Hide overlay on mobile for better touch */
   }
 
-  .episode-detail-premium-content {
-    padding: 1.5rem;
+  .episode-quick-actions {
+    display: none;
   }
 
-  .episode-detail-premium-title-group h2 {
-    font-size: 1.5rem;
+  /* Adjust badges for smaller cards */
+  .episode-premium-badges {
+    top: 0.4rem;
+    left: 0.4rem;
+    right: 0.4rem;
+    gap: 0.3rem;
   }
 
-  .episode-detail-premium-actions {
-    flex-direction: column;
+  .episode-badge-number {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
   }
 
-  .season-title {
-    font-size: 1.6rem;
+  .episode-badge-runtime,
+  .episode-badge-rating {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
   }
-}
 
-@media (max-width: 480px) {
+  .episode-now-indicator {
+    font-size: 0.6rem;
+    padding: 0.2rem;
+    bottom: 0.4rem;
+    left: 0.4rem;
+    right: 0.4rem;
+  }
+
+  /* Adjust info section */
   .episode-premium-header {
     flex-direction: column;
+    gap: 0.2rem;
   }
 
+  .episode-premium-title {
+    font-size: 0.9rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .episode-premium-date {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.5rem;
+  }
+
+  .episode-premium-desc {
+    font-size: 0.7rem;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Hide guest stars and crew on mobile */
+  .episode-guest-section,
+  .episode-crew-section {
+    display: none;
+  }
+
+  /* Compact action buttons */
   .episode-action-bar {
-    flex-direction: column;
-    align-items: stretch;
+    margin-top: 0.3rem;
+    gap: 0.3rem;
   }
 
   .episode-action-play,
   .episode-action-download {
-    justify-content: center;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.65rem;
+  }
+
+  .episode-action-play i,
+  .episode-action-download i {
+    font-size: 0.6rem;
+  }
+
+  .episode-action-info {
+    width: 30px;
+    height: 30px;
+    font-size: 0.7rem;
   }
 
   .episode-vote-indicator {
-    margin-left: 0;
-    justify-content: center;
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+  }
+}
+
+/* Mobile (up to 768px) - 2 cards per view */
+@media (max-width: 768px) {
+  .episode-premium-card {
+    flex: 0 0 calc(50% - 0.5rem); /* 2 cards per view */
   }
 
-  .season-quick-actions {
-    flex-direction: column;
+  .episode-premium-poster {
+    aspect-ratio: 4/3; /* Slightly taller for mobile */
   }
 
-  .season-badge-group {
-    flex-direction: column;
-    align-items: flex-start;
+  .episode-premium-title {
+    font-size: 0.8rem;
   }
 
-  .episode-detail-premium-stats {
-    flex-direction: column;
+  .episode-premium-desc {
+    font-size: 0.65rem;
+    -webkit-line-clamp: 1;
+  }
+
+  /* Hide date on very small screens */
+  .episode-premium-date {
+    display: none;
+  }
+
+  /* Make action buttons icon-only on small screens */
+  .episode-action-play span,
+  .episode-action-download span {
+    display: none;
+  }
+
+  .episode-action-play,
+  .episode-action-download {
+    padding: 0.35rem;
+    border-radius: 8px;
+  }
+
+  .episode-action-play i,
+  .episode-action-download i {
+    margin: 0;
+    font-size: 0.65rem;
+  }
+
+  .episode-action-info {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Small Mobile (under 480px) */
+@media (max-width: 480px) {
+  .episode-premium-card {
+    flex: 0 0 calc(50% - 0.4rem); /* Still 2 cards but smaller gap */
+  }
+
+  .episode-premium-poster {
+    aspect-ratio: 1/1; /* Square for very small screens */
+  }
+
+  .episode-badge-number {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .episode-badge-rating {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .episode-premium-title {
+    font-size: 0.7rem;
+  }
+
+  .episode-premium-info {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .episode-premium-card {
+    flex: 0 0 230px;
+    scroll-snap-align: start;
+  }
+
+  .episode-premium-poster {
+    aspect-ratio: 16/9;
+  }
+
+  .episode-action-play span,
+  .episode-action-download span {
+    display: inline;
+  }
+
+  .episode-action-play,
+  .episode-action-download {
+    padding: 0.4rem 0.8rem;
+    border-radius: 30px;
+  }
+
+  .episode-action-play i,
+  .episode-action-download i {
+    margin-right: 0.3rem;
+  }
+
+  /* Add swipe hint */
+  .episodes-premium-grid::after {
+    content: "← Swipe for more →";
+    position: sticky;
+    right: 1rem;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--text2);
+    font-size: 0.6rem;
+    padding: 0.2rem 0.8rem;
+    border-radius: 30px;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1px solid var(--accent);
+    backdrop-filter: blur(5px);
+    z-index: 10;
+    margin-left: auto;
+    animation: fadeOut 3s ease forwards;
+    animation-delay: 2s;
+  }
+}
+
+/* Scroll Indicators */
+.scroll-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.scroll-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 10px;
+  background: var(--border2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.scroll-dot.active {
+  width: 20px;
+  background: var(--accent);
+}
+
+/* Navigation Arrows - Only show on tablet and up */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .slider-nav {
+    display: flex;
+    justify-content: flex-end;
     gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .slider-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .slider-nav-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .slider-nav-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Hide navigation on mobile */
+@media (max-width: 768px) {
+  .slider-nav {
+    display: none;
+  }
+}
+
+/* Desktop - Hide mobile elements */
+@media (min-width: 1025px) {
+  .scroll-indicators,
+  .slider-nav {
+    display: none;
+  }
+}
+
+/* Animation for fade out */
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .episode-action-play,
+  .episode-action-download,
+  .episode-action-info {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .episode-premium-card:active {
+    transform: scale(0.98);
+    background: rgba(232, 81, 42, 0.1);
   }
 }
 
@@ -5382,4 +5659,3 @@ main {
     transition: transform 0.2s ease;
   }
 }
-
