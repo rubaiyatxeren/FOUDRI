@@ -62,10 +62,8 @@ let watchlist = JSON.parse(localStorage.getItem("foudri_wl") || "[]");
 let continueWatching = JSON.parse(localStorage.getItem("foudri_cw") || "[]");
 let currentModalData = null;
 let allContent = { trending: [], popular: [], tv: [], now: [] };
-// store language data
 let langMovies = { en: [], hi: [], es: [] };
 
-// SEE ALL STATE
 let seeAllCategory = "",
   seeAllLabel = "",
   seeAllPage = 1,
@@ -79,7 +77,6 @@ async function tmdb(ep, extra = "") {
   return r.json();
 }
 
-// ── INIT ──
 window.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("scroll", () => {
     const s = window.scrollY > 20;
@@ -135,26 +132,24 @@ window.addEventListener("DOMContentLoaded", async () => {
   renderGrid(tv.results, "tvGrid", "tv");
   renderGrid(now.results, "nowGrid");
 
-  // Render language-based rows
   renderScrollRow(langMovies.en, "englishGrid", false, "movie");
   renderScrollRow(langMovies.hi, "hindiGrid", false, "movie");
   renderScrollRow(langMovies.es, "spanishGrid", false, "movie");
+
+  await loadAnimationContent();
 });
 
-// Language filter (affects global sections? we'll just keep default rows for now, but pill active)
 window.setLanguageFilter = (lang, el) => {
   document
     .querySelectorAll("#langBar .lang-pill")
     .forEach((p) => p.classList.remove("active"));
   if (el) el.classList.add("active");
-  // Optionally filter the main sections by language? For simplicity we keep separate sections.
   showToast(
     lang ? `Showing ${el.textContent}` : "All languages",
     "fa-language",
   );
 };
 
-// ── HERO ──
 function renderHero(idx) {
   const m = heroMovies[idx];
   if (!m) return;
@@ -245,7 +240,6 @@ window.toggleHeroWatchlist = () => {
   renderHero(heroIdx);
 };
 
-// ── GENRE FILTER ──
 window.setGenreFilter = (genreId, el) => {
   document
     .querySelectorAll(".genre-pill")
@@ -264,7 +258,6 @@ window.setGenreFilter = (genreId, el) => {
   renderGrid(filter([...allContent.tv, ...allContent.now]), "nowGrid");
 };
 
-// ── SEE ALL PAGE (expand to handle lang) ──
 async function openSeeAll(category, label) {
   seeAllCategory = category;
   seeAllLabel = label;
@@ -384,7 +377,6 @@ async function loadMoreSeeAll() {
 }
 window.loadMoreSeeAll = loadMoreSeeAll;
 
-// ── FEATURED ROW ──
 function renderFeatured(items) {
   const g = document.getElementById("featuredRow");
   const valid = items.filter((i) => i.backdrop_path).slice(0, 8);
@@ -409,7 +401,6 @@ function renderFeatured(items) {
     .join("");
 }
 
-// ── SCROLL ROW ──
 function renderScrollRow(items, gridId, showRank = false, type = "movie") {
   const g = document.getElementById(gridId);
   if (!items?.length) {
@@ -440,7 +431,6 @@ function renderScrollRow(items, gridId, showRank = false, type = "movie") {
     .join("");
 }
 
-// ── GRID ──
 function renderGrid(items, gridId, type = "movie") {
   const g = document.getElementById(gridId);
   if (!items?.length) {
@@ -471,7 +461,36 @@ function renderGrid(items, gridId, type = "movie") {
     .join("");
 }
 
-// ── SEARCH ──
+async function loadAnimationContent() {
+  try {
+    const [movies, series] = await Promise.all([
+      tmdb(
+        "/discover/movie?with_genres=16&sort_by=popularity.desc&vote_count.gte=50",
+      ),
+      tmdb(
+        "/discover/tv?with_genres=16&sort_by=popularity.desc&vote_count.gte=20",
+      ),
+    ]);
+
+    const animatedMovies = (movies.results || [])
+      .filter((m) => m.poster_path)
+      .slice(0, 10);
+    const animatedSeries = (series.results || [])
+      .filter((s) => s.poster_path)
+      .slice(0, 10);
+
+    document.getElementById("animatedMoviesCount").textContent =
+      `${animatedMovies.length}+`;
+    document.getElementById("animatedSeriesCount").textContent =
+      `${animatedSeries.length}+`;
+
+    renderScrollRow(animatedMovies, "animationMoviesRow", true, "movie");
+    renderScrollRow(animatedSeries, "animationSeriesRow", true, "tv");
+  } catch (error) {
+    console.error("Error loading animation content:", error);
+  }
+}
+
 async function doSearch() {
   const q = document.getElementById("searchInput").value.trim();
   if (!q) return;
@@ -499,7 +518,6 @@ function clearSearch() {
 window.clearSearch = clearSearch;
 window.scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-// ── WATCHLIST ──
 function toggleWatchlistItem(item) {
   const idx = watchlist.findIndex((w) => w.id === item.id);
   if (idx > -1) {
@@ -556,7 +574,6 @@ function renderWatchlistPanel() {
     .join("");
 }
 
-// ── CONTINUE WATCHING ──
 function addToContinueWatching(id, type, title, poster, season, episode) {
   const entry = {
     id,
@@ -599,7 +616,6 @@ function renderContinueWatching() {
     .join("");
 }
 
-// ── RATING HELPER (accurate stars + bar) ──
 function buildVoteDisplay(voteAverage, voteCount) {
   const score = parseFloat(voteAverage) || 0;
   const pct = (score / 10) * 100;
@@ -631,9 +647,6 @@ function buildVoteDisplay(voteAverage, voteCount) {
     </div>`;
 }
 
-// ── MODAL (identical to before, no changes needed) ──
-// (keeping full existing modal functions; for brevity not repeated, but included in final)
-// ── MODAL ──
 async function openContent(id, type, autoplay = false) {
   clearInterval(heroProgressTimer);
   clearInterval(heroTimer);
@@ -683,7 +696,6 @@ async function openContent(id, type, autoplay = false) {
 }
 window.openContent = openContent;
 
-// ── INFO TAB ──
 function renderInfoTab(d, credits, type) {
   const title = d.title || d.name,
     year = (d.release_date || d.first_air_date || "").slice(0, 4);
@@ -1029,27 +1041,211 @@ async function loadEpisodes(season, showId) {
   document
     .querySelectorAll(".s-tab")
     .forEach((b, i) => b.classList.toggle("active", i === season - 1));
-  const c = document.getElementById("epContainer");
-  if (!c) return;
-  c.innerHTML = '<p style="color:var(--text3);font-size:.85rem">Loading…</p>';
-  const data = await tmdb(`/tv/${showId}/season/${season}`);
-  if (!data.episodes?.length) {
-    c.innerHTML = '<p style="color:var(--text3)">No episodes</p>';
-    return;
-  }
-  c.innerHTML = `<div class="ep-grid">${data.episodes
-    .map((ep, i) => {
-      const num = i + 1,
-        isNow = currentSeason === season && currentEpisode === num;
-      return `<div class="ep-card">
-      <div class="ep-head"><span class="ep-num">E${num}</span>
-      <button class="ep-play-btn${isNow ? " now-playing" : ""}" onclick="playEpisode(${season},${num})">${isNow ? '<i class="fas fa-volume-up"></i> Now' : '<i class="fas fa-play"></i> Play'}</button>
+
+  const container = document.getElementById("epContainer");
+  if (!container) return;
+
+  // Show loading state
+  container.innerHTML = `
+    <div class="episodes-loading-state">
+      <div class="spinner"></div>
+      <span>Loading episodes...</span>
+    </div>
+  `;
+
+  try {
+    // Fetch season data first
+    const seasonData = await tmdb(`/tv/${showId}/season/${season}`);
+
+    if (!seasonData.episodes?.length) {
+      container.innerHTML = `
+        <div class="episodes-empty-state">
+          <i class="fas fa-film"></i>
+          <p>No episodes available for this season</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Fetch show details for additional info
+    const showDetails = await tmdb(`/tv/${showId}`);
+
+    // Calculate season stats
+    const totalRuntime = seasonData.episodes.reduce(
+      (acc, ep) => acc + (ep.runtime || 0),
+      0,
+    );
+    const avgRating = (
+      seasonData.episodes.reduce((acc, ep) => acc + (ep.vote_average || 0), 0) /
+      seasonData.episodes.length
+    ).toFixed(1);
+    const airYear = seasonData.air_date
+      ? new Date(seasonData.air_date).getFullYear()
+      : "TBA";
+
+    // Get season poster
+    const seasonPoster = seasonData.poster_path
+      ? IMG + seasonData.poster_path
+      : showDetails.poster_path
+        ? IMG + showDetails.poster_path
+        : null;
+
+    // Build episodes HTML without additional API calls
+    let episodesHTML = "";
+
+    for (let i = 0; i < seasonData.episodes.length; i++) {
+      const ep = seasonData.episodes[i];
+      const num = i + 1;
+      const isNow = currentSeason === season && currentEpisode === num;
+
+      const stillUrl = ep.still_path
+        ? `https://image.tmdb.org/t/p/w500${ep.still_path}`
+        : "https://placehold.co/500x280/1a1512/e8512a?text=No+Preview";
+
+      const episodeName = ep.name || `Episode ${num}`;
+      const runtime = ep.runtime || 0;
+      const rating = ep.vote_average || 0;
+      const airDate = ep.air_date || "";
+      const overview =
+        (ep.overview || "No description available.").slice(0, 120) +
+        (ep.overview?.length > 120 ? "..." : "");
+
+      episodesHTML += `
+        <div class="episode-premium-card ${isNow ? "current-episode" : ""}" 
+             onclick="playEpisode(${season}, ${num})">
+          
+          <!-- Episode Poster -->
+          <div class="episode-premium-poster">
+            <img src="${stillUrl}" 
+                 alt="${episodeName}" 
+                 loading="lazy"
+                 onerror="this.src='https://placehold.co/500x280/1a1512/e8512a?text=Episode+${num}'">
+            
+            <div class="episode-premium-overlay">
+              <div class="episode-quick-actions">
+                <button class="episode-quick-play" onclick="event.stopPropagation();playEpisode(${season}, ${num})">
+                  <i class="fas fa-play"></i>
+                </button>
+                <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/${num}" 
+                   target="_blank" 
+                   class="episode-quick-download" 
+                   onclick="event.stopPropagation()"
+                   title="Download Episode">
+                  <i class="fas fa-download"></i>
+                </a>
+              </div>
+            </div>
+
+            <div class="episode-premium-badges">
+              <span class="episode-badge-number">EP: ${num}</span>
+              ${runtime ? `<span class="episode-badge-runtime"><i class="fas fa-clock"></i> ${runtime}m</span>` : ""}
+              ${rating > 0 ? `<span class="episode-badge-rating"><i class="fas fa-star"></i> ${rating.toFixed(1)}</span>` : ""}
+            </div>
+
+            ${
+              isNow
+                ? `
+              <div class="episode-now-indicator">
+                <i class="fas fa-volume-up"></i> Currently Playing
+              </div>
+            `
+                : ""
+            }
+          </div>
+
+          <!-- Episode Info -->
+          <div class="episode-premium-info">
+            <div class="episode-premium-header">
+              <h4 class="episode-premium-title">${episodeName}</h4>
+              ${
+                airDate
+                  ? `
+                <span class="episode-premium-date">
+                  <i class="fas fa-calendar-alt"></i> ${new Date(airDate).toLocaleDateString()}
+                </span>
+              `
+                  : ""
+              }
+            </div>
+
+            <p class="episode-premium-desc">${overview}</p>
+
+            <!-- Action Buttons -->
+            <div class="episode-action-bar">
+              <button class="episode-action-play" onclick="event.stopPropagation();playEpisode(${season}, ${num})">
+                <i class="fas fa-play"></i> Play Episode
+              </button>
+              <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/${num}" 
+                 target="_blank" 
+                 class="episode-action-download" 
+                 onclick="event.stopPropagation()">
+                <i class="fas fa-download"></i> Download
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Final HTML with season header and episodes grid
+    container.innerHTML = `
+      <div class="episodes-master-container">
+        <!-- Season Header with Stats -->
+        <div class="season-stats-header" ${seasonPoster ? `style="background-image: linear-gradient(90deg, rgba(10,9,8,0.98) 20%, rgba(10,9,8,0.7)), url(${seasonPoster})"` : ""}>
+          <div class="season-stats-content">
+            <div class="season-badge-group">
+              <span class="season-badge"><i class="fas fa-tag"></i> Season ${season}</span>
+              <span class="season-badge ${seasonData.air_date ? "" : "inactive"}"><i class="fas fa-calendar"></i> ${airYear}</span>
+              <span class="season-badge"><i class="fas fa-film"></i> ${seasonData.episodes.length} Episodes</span>
+              ${totalRuntime > 0 ? `<span class="season-badge"><i class="fas fa-clock"></i> ${Math.floor(totalRuntime / 60)}h ${totalRuntime % 60}m</span>` : ""}
+              ${avgRating !== "0.0" ? `<span class="season-badge rating"><i class="fas fa-star"></i> ${avgRating}</span>` : ""}
+            </div>
+            <h2 class="season-title">${seasonData.name || `Season ${season}`}</h2>
+            ${seasonData.overview ? `<p class="season-overview">${seasonData.overview}</p>` : ""}
+            
+            <div class="season-quick-actions">
+              <button class="season-play-all" onclick="playEpisode(${season}, 1)">
+                <i class="fas fa-play-circle"></i> Play from Start
+              </button>
+              <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/1" target="_blank" class="season-download-all">
+                <i class="fas fa-download"></i> Download Season
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Episodes Grid -->
+        <div class="episodes-premium-grid">
+          ${episodesHTML}
+        </div>
       </div>
-      <div class="ep-title">${ep.name || ""}</div>
-      <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/${num}" target="_blank" class="ep-dl"><i class="fas fa-download"></i> Download</a>
-    </div>`;
-    })
-    .join("")}</div>`;
+    `;
+
+    // Scroll to current episode if exists
+    if (currentSeason === season) {
+      setTimeout(() => {
+        const currentEpisodeEl = document.querySelector(".current-episode");
+        if (currentEpisodeEl) {
+          currentEpisodeEl.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 300);
+    }
+  } catch (error) {
+    console.error("Error loading episodes:", error);
+    container.innerHTML = `
+      <div class="episodes-error-state">
+        <i class="fas fa-exclamation-circle"></i>
+        <h3>Failed to Load Episodes</h3>
+        <p>There was an error loading the episodes. Please try again.</p>
+        <button onclick="loadEpisodes(${season}, ${showId})" class="error-retry-btn">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      </div>
+    `;
+  }
 }
 window.loadEpisodes = loadEpisodes;
 
@@ -1092,3 +1288,179 @@ function showToast(msg, icon = "fa-check-circle") {
   t.classList.add("show");
   toastTimer = setTimeout(() => t.classList.remove("show"), 2500);
 }
+
+let animationFeaturedTimer = null;
+let currentAnimationFeaturedIndex = 0;
+let animationFeaturedItems = { movies: [], series: [] };
+let featuredRotationInterval = 60000; // 60 seconds
+
+async function loadAnimationContent() {
+  try {
+    const [movies, series, moviesPage2, seriesPage2] = await Promise.all([
+      tmdb(
+        "/discover/movie?with_genres=16&sort_by=popularity.desc&vote_count.gte=50&page=1",
+      ),
+      tmdb(
+        "/discover/tv?with_genres=16&sort_by=popularity.desc&vote_count.gte=20&page=1",
+      ),
+      tmdb(
+        "/discover/movie?with_genres=16&sort_by=vote_average.desc&vote_count.gte=100&page=2",
+      ),
+      tmdb(
+        "/discover/tv?with_genres=16&sort_by=vote_average.desc&vote_count.gte=50&page=2",
+      ),
+    ]);
+
+    const allMovies = [
+      ...(movies.results || []),
+      ...(moviesPage2.results || []),
+    ].filter(
+      (m, index, self) =>
+        m.poster_path && index === self.findIndex((t) => t.id === m.id),
+    );
+
+    const allSeries = [
+      ...(series.results || []),
+      ...(seriesPage2.results || []),
+    ].filter(
+      (s, index, self) =>
+        s.poster_path && index === self.findIndex((t) => t.id === s.id),
+    );
+
+    animationFeaturedItems = {
+      movies: allMovies,
+      series: allSeries,
+    };
+
+    const animatedMovies = allMovies.slice(0, 10);
+    const animatedSeries = allSeries.slice(0, 10);
+
+    document.getElementById("animatedMoviesCount").textContent =
+      `${allMovies.length}+`;
+    document.getElementById("animatedSeriesCount").textContent =
+      `${allSeries.length}+`;
+
+    renderScrollRow(animatedMovies, "animationMoviesRow", true, "movie");
+    renderScrollRow(animatedSeries, "animationSeriesRow", true, "tv");
+
+    startAnimationRotation();
+
+    updateFeaturedBanner();
+  } catch (error) {
+    console.error("Error loading animation content:", error);
+  }
+}
+
+function startAnimationRotation() {
+  if (animationFeaturedTimer) {
+    clearInterval(animationFeaturedTimer);
+  }
+
+  animationFeaturedTimer = setInterval(() => {
+    rotateAnimationContent();
+    updateFeaturedBanner();
+  }, featuredRotationInterval);
+}
+
+function rotateAnimationContent() {
+  if (
+    !animationFeaturedItems.movies.length ||
+    !animationFeaturedItems.series.length
+  )
+    return;
+
+  const movieStart = Math.floor(
+    Math.random() * Math.max(1, animationFeaturedItems.movies.length - 10),
+  );
+  const seriesStart = Math.floor(
+    Math.random() * Math.max(1, animationFeaturedItems.series.length - 10),
+  );
+
+  const newMovies = animationFeaturedItems.movies.slice(
+    movieStart,
+    movieStart + 10,
+  );
+  const newSeries = animationFeaturedItems.series.slice(
+    seriesStart,
+    seriesStart + 10,
+  );
+
+  const shuffledMovies = [...newMovies].sort(() => Math.random() - 0.5);
+  const shuffledSeries = [...newSeries].sort(() => Math.random() - 0.5);
+
+  animateRowTransition("animationMoviesRow", shuffledMovies, "movie");
+  animateRowTransition("animationSeriesRow", shuffledSeries, "tv");
+}
+
+function animateRowTransition(rowId, newItems, type) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+
+  row.style.transition = "opacity 0.3s ease";
+  row.style.opacity = "0";
+
+  setTimeout(() => {
+    renderScrollRow(newItems, rowId, true, type);
+
+    row.style.opacity = "1";
+
+    showToast("✨ Fresh animation picks just for you!", "fa-magic");
+  }, 300);
+}
+
+function updateFeaturedBanner() {
+  const banner = document.querySelector(".animation-banner");
+  if (!banner) return;
+
+  const useMovie = Math.random() > 0.5;
+  const items = useMovie
+    ? animationFeaturedItems.movies
+    : animationFeaturedItems.series;
+
+  if (!items.length) return;
+
+  const randomIndex = Math.floor(Math.random() * Math.min(20, items.length));
+  const featured = items[randomIndex];
+
+  if (!featured) return;
+
+  const title = featured.title || featured.name;
+  const overview = featured.overview || "Experience this amazing animation!";
+  const shortOverview =
+    overview.length > 60 ? overview.slice(0, 57) + "..." : overview;
+  const year =
+    (featured.release_date || featured.first_air_date || "").slice(0, 4) ||
+    "2024";
+
+  const bannerContent = banner.querySelector(".banner-content");
+  if (bannerContent) {
+    bannerContent.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+    bannerContent.style.opacity = "0";
+    bannerContent.style.transform = "scale(0.95)";
+
+    setTimeout(() => {
+      banner.querySelector(".banner-title").textContent = title;
+      banner.querySelector(".banner-desc").textContent = shortOverview;
+      banner.setAttribute(
+        "onclick",
+        `openContent(${featured.id}, '${useMovie ? "movie" : "tv"}')`,
+      );
+
+      bannerContent.style.opacity = "1";
+      bannerContent.style.transform = "scale(1)";
+    }, 200);
+  }
+}
+
+window.refreshAnimationContent = function () {
+  rotateAnimationContent();
+  updateFeaturedBanner();
+  showToast("🔄 Animation picks refreshed!", "fa-sync-alt");
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === "A") {
+    e.preventDefault();
+    refreshAnimationContent();
+  }
+});
