@@ -5210,7 +5210,7 @@ main {
   }
 
   .search-bar input {
-    width: 50px;
+    width: 70px;
     padding: 0.3rem 0.4rem;
   }
 
@@ -5382,3 +5382,4 @@ main {
     transition: transform 0.2s ease;
   }
 }
+
