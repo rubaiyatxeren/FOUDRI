@@ -238,6 +238,93 @@
         </div>
       </div>
 
+      <!-- ANIMATION HIGHLIGHT SECTION - GLOWING EFFECT -->
+      <div class="section animation-highlight">
+        <div class="glow-container">
+          <div class="glow-orb glow-orb-1"></div>
+          <div class="glow-orb glow-orb-2"></div>
+          <div class="glow-orb glow-orb-3"></div>
+        </div>
+        <div class="section-header">
+          <div class="section-title">
+            <span class="magic-icon">✨</span>
+            <span class="gradient-text">Animation Universe</span>
+            <span class="magic-icon">🎨</span>
+            <button
+              class="animation-refresh-btn"
+              onclick="refreshAnimationContent()"
+              title="Refresh picks (Ctrl+Shift+A)"
+            >
+              <i class="fas fa-sync-alt"></i>
+            </button>
+            <span class="refresh-timer">
+              <i class="fas fa-clock"></i> updates every 60s
+            </span>
+          </div>
+          <button
+            class="see-all glow-see-all"
+            onclick="openSeeAll('genre_16', 'Animation')"
+          >
+            Explore All
+            <i class="fas fa-chevron-right" style="font-size: 0.65rem"></i>
+          </button>
+        </div>
+
+        <!-- Dual Row: Animated Movies & Series -->
+        <div class="animation-dual">
+          <!-- Animated Movies Row -->
+          <div class="animation-subsection">
+            <div class="subsection-header">
+              <span class="subsection-badge">🎬</span>
+              <h4>Animated Features</h4>
+              <span class="subsection-count" id="animatedMoviesCount"></span>
+            </div>
+            <div class="scroll-row animation-glow-row" id="animationMoviesRow">
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+            </div>
+          </div>
+
+          <!-- Animated Series Row -->
+          <div class="animation-subsection">
+            <div class="subsection-header">
+              <span class="subsection-badge">📺</span>
+              <h4>Animated Series</h4>
+              <span class="subsection-count" id="animatedSeriesCount"></span>
+            </div>
+            <div class="scroll-row animation-glow-row" id="animationSeriesRow">
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured Animation Banner -->
+        <div class="animation-banner" onclick="openContent(508943, 'movie')">
+          <!-- Luca (2021) as example -->
+          <div class="banner-glow"></div>
+          <div class="banner-content">
+            <div class="banner-icon">🎥</div>
+            <div class="banner-text">
+              <span class="banner-label">FEATURED</span>
+              <span class="banner-title">Luca</span>
+              <span class="banner-desc"
+                >A boy experiences an unforgettable summer</span
+              >
+            </div>
+            <button class="banner-btn">
+              <i class="fas fa-play"></i> Watch Now
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- LANGUAGE-BASED SECTIONS (added) -->
       <div class="section" id="langEnglishSection">
         <div class="section-header">
@@ -530,7 +617,7 @@
         </div>
         <div class="footer-stats">
           <span><i class="fas fa-film"></i> 10k+ titles</span>
-          <span><i class="fas fa-globe"></i> All languages</span>
+          <span><i class="fas fa-globe"></i> 6 languages</span>
           <span><i class="fas fa-user-secret"></i> GHOST</span>
         </div>
       </div>
@@ -539,4 +626,3 @@
     <script src="js/prime_worker.js"></script>
   </body>
 </html>
-
