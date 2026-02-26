@@ -202,6 +202,64 @@
       </div>
 
       <div class="section">
+        <!-- ALL TIME MUST WATCH SECTION -->
+        <div class="section must-watch-section">
+          <div class="section-header">
+            <div class="section-title">
+              <span class="must-watch-icon">🏆</span>
+              <span class="gradient-text-gold">All Time Must Watch</span>
+              <span class="must-watch-badge">CLASSICS</span>
+            </div>
+            <div class="must-watch-tabs">
+              <button
+                class="must-watch-tab active"
+                onclick="switchMustWatchTab('movies', this)"
+              >
+                Movies
+              </button>
+              <button
+                class="must-watch-tab"
+                onclick="switchMustWatchTab('tv', this)"
+              >
+                TV Shows
+              </button>
+            </div>
+          </div>
+
+          <!-- Movies Grid (default visible) -->
+          <div id="mustWatchMoviesGrid" class="card-grid">
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+          </div>
+
+          <!-- TV Shows Grid (hidden by default) -->
+          <div id="mustWatchTVGrid" class="card-grid" style="display: none">
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+          </div>
+
+          <div class="must-watch-footer">
+            <button
+              class="must-watch-refresh"
+              onclick="refreshMustWatch()"
+              title="Refresh recommendations"
+            >
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <span class="must-watch-info">
+              <i class="fas fa-star" style="color: var(--gold)"></i> Top rated
+              of all time
+            </span>
+          </div>
+        </div>
         <div class="section-header">
           <div class="section-title"><span>🎯</span> New Releases</div>
           <button
@@ -327,6 +385,134 @@
         </div>
       </div>
 
+      <!-- FOUDRI AI - UNIQUE RECOMMENDATION FEATURE -->
+      <div class="section cinematch-section">
+        <div class="cinematch-bg-particles"></div>
+        <div class="section-header">
+          <div class="section-title">
+            <span class="cinematch-icon">🎯</span>
+            <span class="cinematch-gradient">FOUDRI AI</span>
+            <span class="cinematch-beta">BETA</span>
+          </div>
+          <div class="cinematch-controls">
+            <button class="cinematch-scan-btn" onclick="scanYourTaste()">
+              <i class="fas fa-robot"></i> Scan My Taste
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Thinking Animation (hidden by default) -->
+        <div
+          id="cinematchThinking"
+          class="cinematch-thinking"
+          style="display: none"
+        >
+          <div class="thinking-content">
+            <div class="brain-wave">
+              <i class="fas fa-brain"></i>
+              <div class="wave-loader">
+                <span></span><span></span><span></span><span></span
+                ><span></span>
+              </div>
+            </div>
+            <p class="thinking-text">AI analyzing your watch history...</p>
+            <div class="thinking-progress">
+              <div class="progress-segments">
+                <div class="segment" style="--i: 1"></div>
+                <div class="segment" style="--i: 2"></div>
+                <div class="segment" style="--i: 3"></div>
+                <div class="segment" style="--i: 4"></div>
+                <div class="segment" style="--i: 5"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main FOUDRI Content -->
+        <div id="cinematchContent">
+          <!-- Your Taste Profile -->
+          <div class="taste-profile" id="tasteProfile" style="display: none">
+            <div class="profile-header">
+              <span><i class="fas fa-chart-pie"></i> YOUR TASTE PROFILE</span>
+              <span class="profile-confidence" id="profileConfidence"></span>
+            </div>
+            <div class="genre-bubbles" id="genreBubbles"></div>
+          </div>
+
+          <!-- AI Recommendations Grid -->
+          <div class="cinematch-recommendations">
+            <div class="recommendation-header">
+              <h4>
+                <i class="fas fa-lightbulb" style="color: #ffd700"></i> AI
+                Curation For You
+              </h4>
+              <span class="recommendation-reason" id="recommendationReason"
+                >Based on your interests</span
+              >
+            </div>
+            <div class="scroll-row" id="cinematchGrid">
+              <!-- Will be populated by JS -->
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+            </div>
+          </div>
+
+          <!-- Mood-Based Quick Picks -->
+          <div class="mood-section">
+            <div class="mood-header">
+              <span><i class="fas fa-smile"></i> QUICK MOOD PICKS</span>
+            </div>
+            <div class="mood-buttons">
+              <button
+                class="mood-btn"
+                onclick="loadMoodContent('happy')"
+                style="--mood-color: #ffd700"
+              >
+                <i class="fas fa-sun"></i> Happy
+              </button>
+              <button
+                class="mood-btn"
+                onclick="loadMoodContent('thriller')"
+                style="--mood-color: #ff4444"
+              >
+                <i class="fas fa-skull"></i> Thrill
+              </button>
+              <button
+                class="mood-btn"
+                onclick="loadMoodContent('relax')"
+                style="--mood-color: #4ade80"
+              >
+                <i class="fas fa-leaf"></i> Relax
+              </button>
+              <button
+                class="mood-btn"
+                onclick="loadMoodContent('romance')"
+                style="--mood-color: #ff69b4"
+              >
+                <i class="fas fa-heart"></i> Romance
+              </button>
+              <button
+                class="mood-btn"
+                onclick="loadMoodContent('mind-bend')"
+                style="--mood-color: #9b59b6"
+              >
+                <i class="fas fa-mind-share"></i> Mind Bend
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden Mood Picks Grid -->
+          <div
+            id="moodGrid"
+            class="scroll-row"
+            style="margin-top: 1rem; display: none"
+          ></div>
+        </div>
+      </div>
+
       <!-- LANGUAGE-BASED SECTIONS (added) -->
       <div class="section" id="langEnglishSection">
         <div class="section-header">
@@ -339,6 +525,20 @@
           </button>
         </div>
         <div class="scroll-row" id="englishGrid"></div>
+      </div>
+
+      <!-- BANGLA MOVIES SECTION (added) -->
+      <div class="section" id="langBanglaSection">
+        <div class="section-header">
+          <div class="section-title"><span>🇧🇩</span> Bangla Movies</div>
+          <button
+            class="see-all"
+            onclick="openSeeAll('lang_bn', 'Bangla Movies')"
+          >
+            See all
+          </button>
+        </div>
+        <div class="scroll-row" id="banglaGrid"></div>
       </div>
 
       <div class="section" id="langHindiSection">
