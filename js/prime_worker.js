@@ -71,6 +71,11 @@ let seeAllCategory = "",
   seeAllSort = "popularity",
   seeAllItems = [];
 
+let animationFeaturedTimer = null;
+let currentAnimationFeaturedIndex = 0;
+let animationFeaturedItems = { movies: [], series: [] };
+let featuredRotationInterval = 60000;
+
 async function tmdb(ep, extra = "") {
   const j = ep.includes("?") ? "&" : "?";
   const r = await fetch(`${API}${ep}${j}api_key=${TMDB_KEY}${extra}`);
@@ -105,12 +110,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     tmdb("/discover/movie?with_original_language=hi&sort_by=popularity.desc"),
     tmdb("/discover/movie?with_original_language=es&sort_by=popularity.desc"),
   ]);
+
   allContent = {
     trending: trend.results || [],
     popular: pop.results || [],
     tv: tv.results || [],
     now: now.results || [],
   };
+
   langMovies = {
     en: (en.results || []).filter((m) => m.poster_path),
     hi: (hi.results || []).filter((m) => m.poster_path),
@@ -136,9 +143,20 @@ window.addEventListener("DOMContentLoaded", async () => {
   renderScrollRow(langMovies.hi, "hindiGrid", false, "movie");
   renderScrollRow(langMovies.es, "spanishGrid", false, "movie");
 
-  await loadAnimationContent();
-});
+  await Promise.all([
+    loadBanglaAndDubbedMovies(),
+    loadMustWatchContent(),
+    loadAnimationContent(),
+  ]);
 
+  setTimeout(() => {
+    if (watchlist.length > 0) {
+      scanYourTaste();
+    } else {
+      loadMoodContent("happy");
+    }
+  }, 3000);
+});
 window.setLanguageFilter = (lang, el) => {
   document
     .querySelectorAll("#langBar .lang-pill")
@@ -321,11 +339,84 @@ async function fetchSeeAll(first = false) {
     ep = `/discover/movie?with_original_language=hi&${sortParam}&page=${seeAllPage}`;
   else if (seeAllCategory === "lang_es")
     ep = `/discover/movie?with_original_language=es&${sortParam}&page=${seeAllPage}`;
-  else if (seeAllCategory.startsWith("genre_")) {
+  else if (seeAllCategory === "lang_bn")
+    ep = `/discover/movie?with_original_language=bn&${sortParam}&page=${seeAllPage}`;
+  else if (seeAllCategory === "lang_hi_dubbed") {
+    const [englishRes, hindiRes] = await Promise.all([
+      tmdb(
+        `/discover/movie?with_original_language=en&${sortParam}&page=${seeAllPage}`,
+      ),
+      tmdb(
+        `/discover/movie?with_original_language=hi&${sortParam}&page=${seeAllPage}`,
+      ),
+    ]);
+
+    const combined = [
+      ...(englishRes.results || []),
+      ...(hindiRes.results || []),
+    ];
+
+    const uniqueMap = new Map();
+    combined.forEach((item) => {
+      if (item.poster_path) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+
+    const results = Array.from(uniqueMap.values());
+    results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    seeAllTotalPages = Math.max(
+      englishRes.total_pages || 1,
+      hindiRes.total_pages || 1,
+    );
+    seeAllItems = [...seeAllItems, ...results];
+
+    const mediaType = "movie";
+    const grid = document.getElementById("seeAllGrid");
+    const newCards = results
+      .map((item, idx) => {
+        const t = item.title || item.name,
+          r = item.vote_average?.toFixed(1) || "?";
+        const mt = item.media_type || mediaType;
+        const poster = item.poster_path
+          ? IMG + item.poster_path
+          : `https://placehold.co/300x450/131110/3a302a?text=${encodeURIComponent(t || "?")}`;
+        const inWl = watchlist.some((w) => w.id === item.id);
+        const globalIdx = (seeAllPage - 1) * 20 + idx;
+        return `<div class="card" onclick="openContent(${item.id},'${mt}')">
+        ${globalIdx < 3 && seeAllPage === 1 ? `<div class="card-rank">#${globalIdx + 1}</div>` : ""}
+        <img src="${poster}" alt="${t}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded');this.src='https://placehold.co/300x450/131110/3a302a?text=N/A'">
+        <div class="card-overlay"></div>
+        <div class="card-hover-actions">
+          <div class="card-play-circle"><i class="fas fa-play"></i></div>
+          <button class="card-wl-btn${inWl ? " saved" : ""}" onclick="event.stopPropagation();quickWl(${item.id},'${mt}','${t.replace(/'/g, "\\'")}','${item.poster_path || ""}','${(item.release_date || item.first_air_date || "").slice(0, 4)}','${r}')">${inWl ? "✓ Saved" : "+ My List"}</button>
+        </div>
+        <div class="card-info">
+          <div class="card-title">${t}</div>
+          <div class="card-meta">
+            <span class="card-rating"><i class="fas fa-star" style="font-size:.58rem"></i> ${r}</span>
+            <span class="card-type">${mt === "tv" ? "TV" : "Film"}</span>
+          </div>
+        </div>
+      </div>`;
+      })
+      .join("");
+    grid.innerHTML += newCards;
+
+    const total = seeAllItems.length;
+    document.getElementById("seeAllCount").textContent =
+      `Showing ${seeAllItems.length} of ${total.toLocaleString()} results`;
+    loading.style.display = "none";
+    document.getElementById("seeAllLoadMore").style.display =
+      seeAllPage < seeAllTotalPages ? "block" : "none";
+    return;
+  } else if (seeAllCategory.startsWith("genre_")) {
     const gid = seeAllCategory.split("_")[1];
     ep = `/discover/movie?with_genres=${gid}&${sortParam}&page=${seeAllPage}`;
   } else ep = `/movie/popular?page=${seeAllPage}`;
 
+  // Regular API call for non-special categories
   const data = await tmdb(ep);
   seeAllTotalPages = Math.min(data.total_pages || 1, 20);
   const results = data.results || [];
@@ -488,6 +579,29 @@ async function loadAnimationContent() {
     renderScrollRow(animatedSeries, "animationSeriesRow", true, "tv");
   } catch (error) {
     console.error("Error loading animation content:", error);
+  }
+}
+
+async function loadBanglaAndDubbedMovies() {
+  try {
+    const banglaData = await tmdb(
+      "/discover/movie?with_original_language=bn&sort_by=popularity.desc&vote_count.gte=10",
+    );
+
+    const banglaMovies = (banglaData.results || [])
+      .filter((m) => m.poster_path && m.overview)
+      .slice(0, 12);
+
+    renderScrollRow(banglaMovies, "banglaGrid", false, "movie");
+
+    langMovies.bn = banglaMovies;
+  } catch (error) {
+    console.error("Error loading Bangla movies:", error);
+    const banglaGrid = document.getElementById("banglaGrid");
+    if (banglaGrid) {
+      banglaGrid.innerHTML =
+        '<p style="color:var(--text3);padding:1rem 0">Could not load Bangla movies</p>';
+    }
   }
 }
 
@@ -934,6 +1048,184 @@ async function loadTrailersTab() {
       )
       .join("")}</div>`;
 }
+
+let mustWatchContent = {
+  movies: [],
+  tv: [],
+};
+
+async function loadMustWatchContent() {
+  try {
+    document.getElementById("mustWatchMoviesGrid").innerHTML =
+      '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+    document.getElementById("mustWatchTVGrid").innerHTML =
+      '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+
+    const topMovies = await tmdb(
+      "/discover/movie?sort_by=vote_average.desc&vote_count.gte=1000&page=1",
+    );
+
+    const topTV = await tmdb(
+      "/discover/tv?sort_by=vote_average.desc&vote_count.gte=500&page=1",
+    );
+
+    mustWatchContent.movies = (topMovies.results || [])
+      .filter((m) => m.poster_path && m.vote_average > 7.5)
+      .slice(0, 12);
+
+    mustWatchContent.tv = (topTV.results || [])
+      .filter((s) => s.poster_path && s.vote_average > 7.5)
+      .slice(0, 12);
+
+    renderMustWatchGrid("movies");
+  } catch (error) {
+    console.error("Error loading must watch content:", error);
+    showToast("Failed to load must watch content", "fa-exclamation-triangle");
+
+    document.getElementById("mustWatchMoviesGrid").innerHTML =
+      '<p style="color:var(--text3);grid-column:1/-1;padding:2rem;text-align:center">Failed to load movies</p>';
+    document.getElementById("mustWatchTVGrid").innerHTML =
+      '<p style="color:var(--text3);grid-column:1/-1;padding:2rem;text-align:center">Failed to load TV shows</p>';
+  }
+}
+
+function renderMustWatchGrid(type) {
+  const gridId = type === "movies" ? "mustWatchMoviesGrid" : "mustWatchTVGrid";
+  const items =
+    type === "movies" ? mustWatchContent.movies : mustWatchContent.tv;
+  const grid = document.getElementById(gridId);
+
+  if (!grid) return;
+
+  if (!items || !items.length) {
+    grid.innerHTML =
+      '<p style="color:var(--text3);grid-column:1/-1;padding:2rem;text-align:center">No content available</p>';
+    return;
+  }
+
+  grid.innerHTML = items
+    .map((item, index) => {
+      const title = item.title || item.name;
+      const rating = item.vote_average?.toFixed(1) || "?";
+      const year =
+        (item.release_date || item.first_air_date || "").slice(0, 4) || "N/A";
+      const poster = item.poster_path
+        ? IMG + item.poster_path
+        : `https://placehold.co/300x450/131110/3a302a?text=${encodeURIComponent(title || "?")}`;
+      const mediaType = type === "movies" ? "movie" : "tv";
+      const inWl = watchlist.some((w) => w.id === item.id);
+
+      // Special rank for top 3
+      const rankBadge =
+        index < 3
+          ? `<div class="card-rank" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #0a0908; font-weight: 900;">#${index + 1}</div>`
+          : "";
+
+      return `<div class="card" onclick="openContent(${item.id},'${mediaType}')">
+      ${rankBadge}
+      <img src="${poster}" alt="${title}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded');this.src='https://placehold.co/300x450/131110/3a302a?text=N/A'">
+      <div class="card-overlay"></div>
+      <div class="card-hover-actions">
+        <div class="card-play-circle"><i class="fas fa-play"></i></div>
+        <button class="card-wl-btn${inWl ? " saved" : ""}" onclick="event.stopPropagation();quickWl(${item.id},'${mediaType}','${title.replace(/'/g, "\\'")}','${item.poster_path || ""}','${year}','${rating}')">${inWl ? "✓ Saved" : "+ My List"}</button>
+      </div>
+      <div class="card-info">
+        <div class="card-title">${title}</div>
+        <div class="card-meta">
+          <span class="card-rating"><i class="fas fa-star" style="color:#ffd700"></i> ${rating}</span>
+          <span class="card-type">${mediaType === "tv" ? "TV" : "Film"}</span>
+        </div>
+      </div>
+    </div>`;
+    })
+    .join("");
+}
+
+window.switchMustWatchTab = function (type, tabElement) {
+  document.querySelectorAll(".must-watch-tab").forEach((tab) => {
+    tab.classList.remove("active");
+  });
+  tabElement.classList.add("active");
+
+  const moviesGrid = document.getElementById("mustWatchMoviesGrid");
+  const tvGrid = document.getElementById("mustWatchTVGrid");
+
+  if (type === "movies") {
+    moviesGrid.style.display = "grid";
+    tvGrid.style.display = "none";
+    if (!mustWatchContent.movies || mustWatchContent.movies.length === 0) {
+      loadMustWatchContent();
+    } else {
+      renderMustWatchGrid("movies");
+    }
+  } else {
+    moviesGrid.style.display = "none";
+    tvGrid.style.display = "grid";
+    if (!mustWatchContent.tv || mustWatchContent.tv.length === 0) {
+      loadMustWatchContent();
+    } else {
+      renderMustWatchGrid("tv");
+    }
+  }
+
+  showToast(
+    `Showing top rated ${type === "movies" ? "movies" : "TV shows"}`,
+    "fa-star",
+  );
+};
+
+window.refreshMustWatch = async function () {
+  const refreshBtn = document.querySelector(".must-watch-refresh i");
+  if (refreshBtn) {
+    refreshBtn.style.animation = "spin 1s linear infinite";
+  }
+
+  try {
+    const randomPage = Math.floor(Math.random() * 5) + 1;
+
+    const [topMovies, topTV] = await Promise.all([
+      tmdb(
+        `/discover/movie?sort_by=vote_average.desc&vote_count.gte=1000&page=${randomPage}`,
+      ),
+      tmdb(
+        `/discover/tv?sort_by=vote_average.desc&vote_count.gte=500&page=${randomPage}`,
+      ),
+    ]);
+
+    mustWatchContent.movies = (topMovies.results || [])
+      .filter((m) => m.poster_path && m.vote_average > 7.5)
+      .slice(0, 12);
+
+    mustWatchContent.tv = (topTV.results || [])
+      .filter((s) => s.poster_path && s.vote_average > 7.5)
+      .slice(0, 12);
+
+    const activeTab = document.querySelector(".must-watch-tab.active");
+    if (activeTab && activeTab.textContent.includes("Movies")) {
+      renderMustWatchGrid("movies");
+    } else {
+      renderMustWatchGrid("tv");
+    }
+
+    showToast("✨ Must watch list refreshed!", "fa-sync-alt");
+  } catch (error) {
+    console.error("Error refreshing must watch:", error);
+    showToast("Failed to refresh", "fa-exclamation-triangle");
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.style.animation = "";
+    }
+  }
+};
+
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
 async function loadReviewsTab() {
   document.getElementById("tab-reviews").innerHTML =
     '<div class="spinner" style="margin:2rem auto"></div>';
@@ -1045,7 +1337,6 @@ async function loadEpisodes(season, showId) {
   const container = document.getElementById("epContainer");
   if (!container) return;
 
-  // Show loading state
   container.innerHTML = `
     <div class="episodes-loading-state">
       <div class="spinner"></div>
@@ -1054,7 +1345,6 @@ async function loadEpisodes(season, showId) {
   `;
 
   try {
-    // Fetch season data first
     const seasonData = await tmdb(`/tv/${showId}/season/${season}`);
 
     if (!seasonData.episodes?.length) {
@@ -1067,10 +1357,8 @@ async function loadEpisodes(season, showId) {
       return;
     }
 
-    // Fetch show details for additional info
     const showDetails = await tmdb(`/tv/${showId}`);
 
-    // Calculate season stats
     const totalRuntime = seasonData.episodes.reduce(
       (acc, ep) => acc + (ep.runtime || 0),
       0,
@@ -1083,14 +1371,12 @@ async function loadEpisodes(season, showId) {
       ? new Date(seasonData.air_date).getFullYear()
       : "TBA";
 
-    // Get season poster
     const seasonPoster = seasonData.poster_path
       ? IMG + seasonData.poster_path
       : showDetails.poster_path
         ? IMG + showDetails.poster_path
         : null;
 
-    // Build episodes HTML without additional API calls
     let episodesHTML = "";
 
     for (let i = 0; i < seasonData.episodes.length; i++) {
@@ -1187,7 +1473,6 @@ async function loadEpisodes(season, showId) {
       `;
     }
 
-    // Final HTML with season header and episodes grid
     container.innerHTML = `
       <div class="episodes-master-container">
         <!-- Season Header with Stats -->
@@ -1221,7 +1506,6 @@ async function loadEpisodes(season, showId) {
       </div>
     `;
 
-    // Scroll to current episode if exists
     if (currentSeason === season) {
       setTimeout(() => {
         const currentEpisodeEl = document.querySelector(".current-episode");
@@ -1248,6 +1532,302 @@ async function loadEpisodes(season, showId) {
   }
 }
 window.loadEpisodes = loadEpisodes;
+
+// ==================== FOUDRI AI - UNIQUE FEATURE ====================
+
+let userTasteProfile = {
+  genres: {},
+  averageRating: 0,
+  totalWatched: 0,
+  confidence: 0,
+};
+
+// Mood-based genre mappings
+const moodGenres = {
+  happy: [35, 16, 10751], // Comedy, Animation, Family
+  thriller: [53, 80, 9648], // Thriller, Crime, Mystery
+  relax: [18, 10749, 99], // Drama, Romance, Documentary
+  romance: [10749, 35, 18], // Romance, Comedy, Drama
+  "mind-bend": [878, 9648, 14], // Sci-Fi, Mystery, Fantasy
+};
+
+// Scan user's taste based on watch history and watchlist
+window.scanYourTaste = async function () {
+  const thinkingEl = document.getElementById("cinematchThinking");
+  const tasteProfileEl = document.getElementById("tasteProfile");
+  const scanBtn = document.querySelector(".cinematch-scan-btn");
+
+  if (!thinkingEl || !tasteProfileEl) return;
+
+  // Disable button and show thinking animation
+  if (scanBtn) scanBtn.style.pointerEvents = "none";
+  thinkingEl.style.display = "block";
+
+  // Scroll to section smoothly
+  const cinematchSection = document.querySelector(".cinematch-section");
+  if (cinematchSection) {
+    cinematchSection.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  // Simulate AI processing with delays
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  try {
+    // Analyze watchlist and continue watching
+    const analyzedGenres = await analyzeUserPreferences();
+
+    // Update taste profile
+    userTasteProfile.genres = analyzedGenres.genres;
+    userTasteProfile.confidence = analyzedGenres.confidence;
+
+    // Render taste profile
+    renderTasteProfile();
+
+    // Get AI recommendations
+    await getAIRecommendations();
+
+    // Hide thinking, show profile
+    thinkingEl.style.display = "none";
+    tasteProfileEl.style.display = "block";
+
+    showToast("🎯 AI has analyzed your taste!", "fa-robot");
+  } catch (error) {
+    console.error("Error scanning taste:", error);
+    if (thinkingEl) thinkingEl.style.display = "none";
+    showToast("Failed to analyze taste", "fa-exclamation-triangle");
+  } finally {
+    if (scanBtn) scanBtn.style.pointerEvents = "auto";
+  }
+};
+
+// Analyze user preferences from watchlist and continue watching
+async function analyzeUserPreferences() {
+  const genreCount = {};
+  let totalItems = 0;
+
+  // Analyze watchlist
+  watchlist.forEach((item) => {
+    totalItems++;
+  });
+
+  // Analyze continue watching
+  continueWatching.forEach((item) => {
+    totalItems++;
+  });
+
+  // Fetch genre information for items
+  const itemsToAnalyze = [...watchlist, ...continueWatching].slice(0, 10);
+
+  for (const item of itemsToAnalyze) {
+    try {
+      const details = await tmdb(`/${item.type}/${item.id}`);
+      if (details.genres) {
+        details.genres.forEach((genre) => {
+          genreCount[genre.id] = (genreCount[genre.id] || 0) + 1;
+        });
+      }
+    } catch (e) {
+      console.log("Could not fetch details for item");
+    }
+  }
+
+  // If no data, use popular genres as fallback
+  if (Object.keys(genreCount).length === 0) {
+    genreCount[28] = 3; // Action
+    genreCount[18] = 2; // Drama
+    genreCount[35] = 2; // Comedy
+  }
+
+  // Calculate confidence based on data amount
+  const confidence = Math.min(75 + totalItems * 3, 98);
+
+  return {
+    genres: genreCount,
+    confidence: confidence,
+  };
+}
+
+// Render taste profile with genre bubbles
+function renderTasteProfile() {
+  const container = document.getElementById("genreBubbles");
+  const confidenceEl = document.getElementById("profileConfidence");
+
+  if (!container || !confidenceEl) return;
+
+  const genreNames = {
+    28: "Action",
+    12: "Adventure",
+    16: "Animation",
+    35: "Comedy",
+    80: "Crime",
+    99: "Documentary",
+    18: "Drama",
+    10751: "Family",
+    14: "Fantasy",
+    27: "Horror",
+    9648: "Mystery",
+    10749: "Romance",
+    878: "Sci-Fi",
+    53: "Thriller",
+  };
+
+  // Calculate percentages
+  const total = Object.values(userTasteProfile.genres).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const sortedGenres = Object.entries(userTasteProfile.genres)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+
+  container.innerHTML = sortedGenres
+    .map(([genreId, count], index) => {
+      const percentage = Math.round((count / total) * 100);
+      const genreName = genreNames[genreId] || "Unknown";
+      return `
+      <div class="genre-bubble" style="--i:${index}">
+        <span>${genreName}</span>
+        <span class="percentage">${percentage}%</span>
+      </div>
+    `;
+    })
+    .join("");
+
+  confidenceEl.textContent = `${userTasteProfile.confidence}% Match Confidence`;
+}
+
+// Get AI recommendations based on taste
+async function getAIRecommendations() {
+  const grid = document.getElementById("cinematchGrid");
+  if (!grid) return;
+
+  grid.innerHTML =
+    '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+
+  // Get top genres
+  const topGenres = Object.entries(userTasteProfile.genres)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([id]) => id);
+
+  // Fetch recommendations based on top genres
+  const recommendations = [];
+
+  for (const genreId of topGenres) {
+    try {
+      const data = await tmdb(
+        `/discover/movie?with_genres=${genreId}&sort_by=popularity.desc&page=1`,
+      );
+      if (data.results) {
+        recommendations.push(...data.results.slice(0, 4));
+      }
+    } catch (e) {
+      console.log("Error fetching recommendations");
+    }
+  }
+
+  // Remove duplicates and filter
+  const unique = Array.from(
+    new Map(recommendations.map((item) => [item.id, item])).values(),
+  )
+    .filter((item) => !watchlist.some((w) => w.id === item.id))
+    .slice(0, 8);
+
+  // Display reason
+  const reasonEl = document.getElementById("recommendationReason");
+  const genreNames = {
+    28: "Action",
+    18: "Drama",
+    35: "Comedy",
+    878: "Sci-Fi",
+    53: "Thriller",
+    10749: "Romance",
+  };
+  const topGenreName = genreNames[topGenres[0]] || "your interests";
+  if (reasonEl) reasonEl.textContent = `Because you love ${topGenreName}`;
+
+  renderScrollRow(unique, "cinematchGrid", true, "movie");
+}
+
+// Load content based on mood
+window.loadMoodContent = async function (mood) {
+  const moodGrid = document.getElementById("moodGrid");
+  if (!moodGrid) {
+    console.error("Mood grid not found");
+    return;
+  }
+
+  const genreIds = moodGenres[mood] || [35]; // Default to comedy
+
+  moodGrid.innerHTML =
+    '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  moodGrid.style.display = "flex";
+
+  try {
+    const randomPage = Math.floor(Math.random() * 3) + 1;
+    const data = await tmdb(
+      `/discover/movie?with_genres=${genreIds.join(",")}&sort_by=popularity.desc&page=${randomPage}`,
+    );
+
+    const items = (data.results || [])
+      .filter((item) => item.poster_path)
+      .slice(0, 8);
+
+    // Animate button click
+    const buttons = document.querySelectorAll(".mood-btn");
+    buttons.forEach((btn) => (btn.style.opacity = "0.7"));
+    if (event && event.target) {
+      event.target.style.opacity = "1";
+      event.target.style.transform = "scale(1.05)";
+    }
+
+    setTimeout(() => {
+      buttons.forEach((btn) => {
+        btn.style.opacity = "1";
+        btn.style.transform = "scale(1)";
+      });
+    }, 200);
+
+    renderScrollRow(items, "moodGrid", false, "movie");
+
+    // Add mood-specific message
+    const moodMessages = {
+      happy: "😊 Spreading smiles!",
+      thriller: "🔪 Hold your breath!",
+      relax: "🌿 Time to unwind",
+      romance: "❤️ Love is in the air",
+      "mind-bend": "🌀 Reality bending!",
+    };
+
+    showToast(moodMessages[mood] || "Enjoy!", "fa-smile");
+  } catch (error) {
+    console.error("Error loading mood content:", error);
+    moodGrid.innerHTML =
+      '<p style="color:var(--text3);padding:1rem">Failed to load mood picks. Please try again.</p>';
+    showToast("Failed to load mood picks", "fa-exclamation-triangle");
+  }
+};
+
+// Initialize CineMatch with default content
+async function initCineMatch() {
+  try {
+    // Load default happy mood content
+    await loadMoodContent("happy");
+
+    // Check if we should show taste profile
+    if (watchlist.length > 0) {
+      // Delay a bit before showing taste profile
+      setTimeout(() => {
+        scanYourTaste();
+      }, 2000);
+    }
+  } catch (error) {
+    console.error("Error initializing CineMatch:", error);
+  }
+}
 
 function playEpisode(s, e) {
   currentSeason = s;
@@ -1288,11 +1868,6 @@ function showToast(msg, icon = "fa-check-circle") {
   t.classList.add("show");
   toastTimer = setTimeout(() => t.classList.remove("show"), 2500);
 }
-
-let animationFeaturedTimer = null;
-let currentAnimationFeaturedIndex = 0;
-let animationFeaturedItems = { movies: [], series: [] };
-let featuredRotationInterval = 60000; // 60 seconds
 
 async function loadAnimationContent() {
   try {
