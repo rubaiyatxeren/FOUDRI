@@ -1,4 +1,3 @@
-
 (function () {
   "use strict";
 
@@ -480,11 +479,24 @@
       document.getElementById("afTVCount").textContent = tvCount;
 
       /* Info chips */
+      /* Info chips */
       const chips = [];
-      if (person.birthday)
+      if (person.birthday) {
+        const birthDate = new Date(person.birthday);
+        const endDate = person.deathday
+          ? new Date(person.deathday)
+          : new Date();
+        let age = endDate.getFullYear() - birthDate.getFullYear();
+        const monthDiff = endDate.getMonth() - birthDate.getMonth();
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && endDate.getDate() < birthDate.getDate())
+        )
+          age--;
         chips.push(
-          `<div class="actor-info-chip"><i class="fas fa-birthday-cake"></i>${person.birthday}</div>`,
+          `<div class="actor-info-chip"><i class="fas fa-birthday-cake"></i>${person.birthday} <span style="margin-left:5px;background:rgba(255,255,255,.08);border-radius:4px;padding:1px 6px;font-weight:700;color:var(--accent,#e8512a)">${age}${person.deathday ? " yrs" : " yrs old"}</span></div>`,
         );
+      }
       if (pob)
         chips.push(
           `<div class="actor-info-chip"><i class="fas fa-map-marker-alt"></i>${pob}</div>`,
