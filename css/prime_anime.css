@@ -1,10 +1,4 @@
 
-/* ============================================================
-   FOUDRI — Anime Module CSS  (prime_anime.css)
-   Theme: Cyberpunk-Sakura — dark base, violet/magenta/cyan accents
-   with ink-wash textures and neon glow micro-interactions
-   ============================================================ */
-
 /* ---------- CSS VARIABLES ---------- */
 :root {
   --ani-violet: #c084fc;
@@ -1155,6 +1149,17 @@
   gap: 1rem;
 }
 
+/* All Anime section header — stacks sort bar below title on tight screens */
+#animeAllSection .anime-section-header {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+#animeAllSection .anime-sort-bar {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 /* ============================================================
    SORT BAR
    ============================================================ */
@@ -1458,8 +1463,8 @@
     width: 124px;
   }
   .anime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 0.65rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
   }
   .anime-stats-band {
     grid-template-columns: repeat(2, 1fr);
@@ -1492,43 +1497,99 @@
     bottom: 1rem;
     right: 1rem;
   }
+
+  /* All Anime header: title on top, sort below */
+  #animeAllSection .anime-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+  #animeAllSection .anime-section-title {
+    font-size: 0.95rem;
+  }
+  #animeAllSection .anime-sort-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    width: 100%;
+  }
+  .anime-sort-label {
+    display: none;
+  }
+  .anime-sort-btn {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.64rem;
+    border-radius: 20px;
+  }
+  /* 3 columns exactly */
+  .anime-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+  }
+  .anime-card-title {
+    font-size: 0.66rem;
+  }
+  .anime-card-rating {
+    font-size: 0.58rem;
+  }
+  .anime-card-type {
+    font-size: 0.5rem;
+    padding: 0.08rem 0.3rem;
+  }
 }
 
 /* ============================================================
    MOBILE NAV — Hamburger + Drawer + Bottom Tab Bar
    ============================================================ */
 
-/* ── Hamburger button (visible only on mobile) ── */
+/* ── Hide desktop Anime nav link on mobile ── */
+@media (max-width: 768px) {
+  #animeNavLink {
+    display: none !important;
+  }
+}
+@media (min-width: 769px) {
+  #animeMenuToggle,
+  #mobileBottomBar,
+  #mobileNavDrawer {
+    display: none !important;
+  }
+}
+
+/* ── Hamburger button ── */
 #animeMenuToggle {
-  display: none;
+  display: none; /* shown via media query below */
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: rgba(192, 132, 252, 0.1);
-  border: 1px solid rgba(192, 132, 252, 0.28);
+  background: rgba(192, 132, 252, 0.08);
+  border: 1px solid rgba(192, 132, 252, 0.25);
   cursor: pointer;
   position: relative;
-  transition: all 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
   flex-shrink: 0;
-  z-index: 55;
+  /* sits right before watchlist icon — spacing handled by nav-right gap */
 }
 #animeMenuToggle:hover {
-  background: rgba(192, 132, 252, 0.2);
-  box-shadow: 0 0 14px rgba(192, 132, 252, 0.3);
+  background: rgba(192, 132, 252, 0.18);
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.28);
 }
-#animeMenuToggle .hamburger-lines {
+.hamburger-lines {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 18px;
+  width: 16px;
+  pointer-events: none;
 }
-#animeMenuToggle .hamburger-lines span {
+.hamburger-lines span {
   display: block;
   height: 2px;
   border-radius: 2px;
-  background: var(--ani-violet);
+  background: var(--ani-violet, #c084fc);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #animeMenuToggle.open .hamburger-lines span:nth-child(1) {
@@ -1541,25 +1602,25 @@
 #animeMenuToggle.open .hamburger-lines span:nth-child(3) {
   transform: translateY(-6px) rotate(-45deg);
 }
-/* Anime indicator dot on hamburger */
 #animeMenuToggle .anime-indicator {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 7px;
-  height: 7px;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: linear-gradient(135deg, #e040fb, #7c4dff);
-  border: 1px solid var(--bg);
+  border: 1.5px solid var(--bg, #0a0908);
   animation: ani-badge-pulse 2.5s ease-in-out infinite;
+  pointer-events: none;
 }
 
-/* ── Mobile Drawer overlay ── */
+/* ── Drawer overlay ── */
 #mobileNavDrawer {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 200;
 }
 #mobileNavDrawer.open {
   display: block;
@@ -1568,12 +1629,12 @@
 .mobile-drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(5, 4, 4, 0.75);
+  background: rgba(5, 4, 4, 0.76);
   backdrop-filter: blur(8px);
   cursor: pointer;
-  animation: mobileBackdropIn 0.25s ease;
+  animation: mDrawerBgIn 0.22s ease;
 }
-@keyframes mobileBackdropIn {
+@keyframes mDrawerBgIn {
   from {
     opacity: 0;
   }
@@ -1586,32 +1647,29 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 280px;
-  max-width: 88vw;
+  width: 272px;
+  max-width: 86vw;
   height: 100vh;
   background: #0c0a14;
-  border-left: 1px solid rgba(192, 132, 252, 0.2);
+  border-left: 1px solid rgba(192, 132, 252, 0.18);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  animation: drawerSlideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6);
+  animation: mDrawerIn 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.65);
 }
-@keyframes drawerSlideIn {
+@keyframes mDrawerIn {
   from {
     transform: translateX(100%);
-    opacity: 0;
   }
   to {
     transform: translateX(0);
-    opacity: 1;
   }
 }
 
-/* Drawer header */
 .mobile-drawer-header {
-  padding: 1.2rem 1.4rem 0.8rem;
-  border-bottom: 1px solid rgba(192, 132, 252, 0.12);
+  padding: 1rem 1.2rem 0.8rem;
+  border-bottom: 1px solid rgba(192, 132, 252, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1620,165 +1678,162 @@
 .mobile-drawer-logo {
   font-family: "Syne", sans-serif;
   font-weight: 900;
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   letter-spacing: -1px;
-  color: var(--text);
+  color: var(--text, #f5f0eb);
 }
 .mobile-drawer-logo em {
-  color: var(--accent);
+  color: var(--accent, #e8512a);
   font-style: normal;
 }
 .mobile-drawer-close {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
-  width: 32px;
-  height: 32px;
+  color: rgba(255, 255, 255, 0.5);
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   transition: all 0.15s;
 }
 .mobile-drawer-close:hover {
-  background: rgba(232, 81, 42, 0.15);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: rgba(232, 81, 42, 0.12);
+  border-color: var(--accent, #e8512a);
+  color: var(--accent, #e8512a);
 }
 
-/* Nav links in drawer */
 .mobile-drawer-links {
-  padding: 0.8rem 0;
+  padding: 0.5rem 0;
   flex: 1;
 }
+
 .mobile-drawer-link {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.85rem 1.4rem;
-  color: rgba(255, 255, 255, 0.65);
+  gap: 0.8rem;
+  padding: 0.78rem 1.2rem;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
   font-family: "Syne", sans-serif;
   font-weight: 600;
-  font-size: 0.92rem;
-  transition: all 0.18s;
-  position: relative;
-  cursor: pointer;
-  border: none;
+  font-size: 0.88rem;
+  transition: all 0.16s;
   background: none;
+  border: none;
   width: 100%;
   text-align: left;
+  cursor: pointer;
 }
 .mobile-drawer-link:hover {
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
 }
 .mobile-drawer-link.active {
-  color: var(--accent);
-  background: rgba(232, 81, 42, 0.07);
+  color: var(--accent, #e8512a);
+  background: rgba(232, 81, 42, 0.06);
 }
 .mobile-drawer-link-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
-  transition: all 0.18s;
+  transition: all 0.16s;
 }
 .mobile-drawer-link:hover .mobile-drawer-link-icon {
-  background: rgba(232, 81, 42, 0.12);
-  border-color: rgba(232, 81, 42, 0.3);
-  color: var(--accent);
+  background: rgba(232, 81, 42, 0.1);
+  border-color: rgba(232, 81, 42, 0.25);
+  color: var(--accent, #e8512a);
 }
 .mobile-drawer-link.active .mobile-drawer-link-icon {
-  background: rgba(232, 81, 42, 0.15);
-  border-color: rgba(232, 81, 42, 0.4);
-  color: var(--accent);
+  background: rgba(232, 81, 42, 0.12);
+  border-color: rgba(232, 81, 42, 0.35);
+  color: var(--accent, #e8512a);
 }
 
-/* Special Anime link in drawer */
-.mobile-drawer-link.anime-drawer-link {
-  background: rgba(192, 132, 252, 0.06);
-  border-top: 1px solid rgba(192, 132, 252, 0.1);
-  border-bottom: 1px solid rgba(192, 132, 252, 0.1);
-  color: var(--ani-violet);
+/* Anime link special */
+.anime-drawer-link {
+  background: rgba(192, 132, 252, 0.05) !important;
+  border-top: 1px solid rgba(192, 132, 252, 0.08);
+  border-bottom: 1px solid rgba(192, 132, 252, 0.08);
+  color: var(--ani-violet, #c084fc) !important;
   margin: 0.3rem 0;
 }
-.mobile-drawer-link.anime-drawer-link:hover {
-  background: rgba(192, 132, 252, 0.12);
-  color: #fff;
+.anime-drawer-link:hover {
+  background: rgba(192, 132, 252, 0.12) !important;
+  color: #fff !important;
 }
-.mobile-drawer-link.anime-drawer-link .mobile-drawer-link-icon {
-  background: rgba(192, 132, 252, 0.12);
-  border-color: rgba(192, 132, 252, 0.3);
-  color: var(--ani-violet);
+.anime-drawer-link .mobile-drawer-link-icon {
+  background: rgba(192, 132, 252, 0.1) !important;
+  border-color: rgba(192, 132, 252, 0.28) !important;
+  color: var(--ani-violet, #c084fc) !important;
 }
 .mobile-anime-badge {
   margin-left: auto;
   background: linear-gradient(135deg, #e040fb, #7c4dff);
   color: #fff;
-  font-size: 0.42rem;
+  font-size: 0.44rem;
   font-weight: 900;
-  padding: 0.12rem 0.45rem;
+  padding: 0.1rem 0.42rem;
   border-radius: 20px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   animation: ani-badge-pulse 2.5s ease-in-out infinite;
 }
 
-/* Drawer divider */
 .mobile-drawer-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.06);
-  margin: 0.4rem 1.2rem;
+  margin: 0.3rem 1.1rem;
 }
 .mobile-drawer-section-label {
   font-family: "Syne", sans-serif;
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.25);
-  padding: 0.6rem 1.4rem 0.3rem;
+  color: rgba(255, 255, 255, 0.22);
+  padding: 0.5rem 1.2rem 0.2rem;
 }
 
-/* Drawer footer */
 .mobile-drawer-footer {
-  padding: 1rem 1.4rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.8rem 1.2rem 1.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
 }
 .mobile-drawer-footer-logo {
   font-family: "Syne", sans-serif;
-  font-weight: 800;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.3);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.22);
   letter-spacing: -0.3px;
 }
 .mobile-drawer-footer-logo em {
-  color: var(--accent);
+  color: var(--accent, #e8512a);
   font-style: normal;
 }
 
-/* ── Bottom tab bar (mobile) ── */
+/* ── Bottom tab bar ── */
 #mobileBottomBar {
-  display: none;
+  display: none; /* shown via media query */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 54;
-  background: rgba(10, 9, 8, 0.96);
+  background: rgba(10, 9, 8, 0.97);
   backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding: 0 0 env(safe-area-inset-bottom, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .mobile-bottom-tabs {
   display: flex;
@@ -1790,99 +1845,83 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 0.55rem 0.3rem;
+  gap: 2px;
+  padding: 0.5rem 0.25rem 0.4rem;
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.4);
-  transition: color 0.18s;
-  position: relative;
-  font-size: 0.56rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.52rem;
   font-family: "Syne", sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.2px;
+  transition: color 0.16s;
+  position: relative;
+  text-transform: uppercase;
 }
 .mobile-tab-btn i {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1;
 }
 .mobile-tab-btn:hover {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
 }
 .mobile-tab-btn.active {
-  color: var(--accent);
+  color: var(--accent, #e8512a);
 }
 .mobile-tab-btn.active i {
-  filter: drop-shadow(0 0 6px rgba(232, 81, 42, 0.7));
+  filter: drop-shadow(0 0 5px rgba(232, 81, 42, 0.65));
 }
-
-/* Anime tab special */
+/* Anime tab */
 .mobile-tab-btn.anime-tab {
-  color: rgba(192, 132, 252, 0.6);
+  color: rgba(192, 132, 252, 0.45);
 }
-.mobile-tab-btn.anime-tab.active,
 .mobile-tab-btn.anime-tab:hover {
-  color: var(--ani-violet);
+  color: rgba(192, 132, 252, 0.8);
+}
+.mobile-tab-btn.anime-tab.active {
+  color: var(--ani-violet, #c084fc);
 }
 .mobile-tab-btn.anime-tab.active i {
-  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.8));
+  filter: drop-shadow(0 0 7px rgba(192, 132, 252, 0.75));
 }
 .mobile-tab-anime-dot {
   position: absolute;
-  top: 6px;
-  right: calc(50% - 16px);
+  top: 5px;
+  right: calc(50% - 15px);
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: linear-gradient(135deg, #e040fb, #7c4dff);
+  pointer-events: none;
   animation: ani-badge-pulse 2.5s ease-in-out infinite;
 }
-
-/* Active tab indicator line */
-.mobile-tab-btn::after {
+/* Active indicator line */
+.mobile-tab-btn::before {
   content: "";
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 20%;
   right: 20%;
   height: 2px;
-  border-radius: 2px 2px 0 0;
+  border-radius: 0 0 2px 2px;
   background: currentColor;
   opacity: 0;
-  transition: opacity 0.18s;
+  transition: opacity 0.16s;
 }
-.mobile-tab-btn.active::after {
+.mobile-tab-btn.active::before {
   opacity: 1;
 }
 
-/* Add padding to body bottom so content doesn't hide behind bottom bar */
+/* ── Show on mobile only ── */
 @media (max-width: 768px) {
-  body {
-    padding-bottom: 60px;
-  }
   #animeMenuToggle {
     display: flex;
   }
   #mobileBottomBar {
     display: block;
   }
-  /* Push main nav Anime link out since we have bottom bar */
-  #animeNavLink {
-    display: none !important;
-  }
-}
-
-@media (min-width: 769px) {
-  #animeMenuToggle {
-    display: none !important;
-  }
-  #mobileBottomBar {
-    display: none !important;
-  }
-  #animeNavLink {
-    display: inline-flex !important;
-  }
   body {
-    padding-bottom: 0;
+    padding-bottom: 58px;
   }
 }
