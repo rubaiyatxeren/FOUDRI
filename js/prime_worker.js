@@ -920,15 +920,39 @@ function renderInfoTab(d, credits, type) {
         ? `
       <div class="section-sub" style="margin-top:1.6rem">Cast <span style="color:var(--text3);font-size:.75rem;font-weight:400;text-transform:none;letter-spacing:0">${cast.length} members · drag to scroll</span></div>
       <div class="cast-wrap"><div class="cast-row" id="castRow">
-        ${cast
-          .map(
-            (p) => `<div class="cast-card">
-          <img src="${p.profile_path ? IMG + p.profile_path : "https://placehold.co/120x120/1c1917/3a302a?text=?"}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/120x120/1c1917/3a302a?text=?'">
-          <div class="cast-name">${p.name}</div>
-          <div class="cast-char">${p.character || ""}</div>
-        </div>`,
-          )
-          .join("")}
+      ${
+        cast.length
+          ? ` 
+      <div class="cast-track-wrap">
+        <div class="cast-row" id="castRow">
+          ${cast
+            .map(
+              (p, idx) => `
+            <div class="cast-card-v2" onclick="window.openActorProfile && window.openActorProfile(${p.id})" style="animation-delay:${idx * 0.04}s">
+              <div class="cast-photo-wrap">
+                <img
+                  src="${p.profile_path ? IMG + p.profile_path : "https://placehold.co/160x200/1a1512/3a302a?text=?"}"
+                  alt="${p.name}"
+                  loading="lazy"
+                  onerror="this.src='https://placehold.co/160x200/1a1512/3a302a?text=?'">
+                <div class="cast-photo-shine"></div>
+                <div class="cast-photo-overlay">
+                  <div class="cast-view-pill"><i class="fas fa-user"></i> Profile</div>
+                </div>
+                <div class="cast-rank-dot">${idx + 1}</div>
+              </div>
+              <div class="cast-card-v2-info">
+                <div class="cast-card-v2-name">${p.name}</div>
+                <div class="cast-card-v2-char">${p.character ? `<i class="fas fa-mask" style="font-size:.5rem;opacity:.5;margin-right:3px"></i>${p.character}` : ""}</div>
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>`
+          : ""
+      }
       </div></div>`
         : ""
     }`;
@@ -943,20 +967,53 @@ function renderInfoTab(d, credits, type) {
   if (castRow) {
     let isDown = false,
       startX,
-      scrollLeft;
+      scrollLeft,
+      velX = 0,
+      lastX = 0,
+      animFrame;
+
+    castRow.style.cursor = "grab";
+    castRow.style.userSelect = "none";
+
     castRow.addEventListener("mousedown", (e) => {
       isDown = true;
-      startX = e.pageX - castRow.offsetLeft;
+      castRow.style.cursor = "grabbing";
+      startX = e.pageX;
       scrollLeft = castRow.scrollLeft;
+      lastX = e.pageX;
+      velX = 0;
+      cancelAnimationFrame(animFrame);
     });
-    castRow.addEventListener("mouseleave", () => (isDown = false));
-    castRow.addEventListener("mouseup", () => (isDown = false));
+
+    document.addEventListener("mouseup", () => {
+      if (!isDown) return;
+      isDown = false;
+      castRow.style.cursor = "grab";
+      let vel = velX * 3;
+      (function momentum() {
+        if (Math.abs(vel) < 0.5) return;
+        castRow.scrollLeft -= vel;
+        vel *= 0.9;
+        animFrame = requestAnimationFrame(momentum);
+      })();
+    });
+
     castRow.addEventListener("mousemove", (e) => {
       if (!isDown) return;
       e.preventDefault();
-      castRow.scrollLeft =
-        scrollLeft - (e.pageX - castRow.offsetLeft - startX) * 1.5;
+      velX = e.pageX - lastX;
+      lastX = e.pageX;
+      castRow.scrollLeft = scrollLeft - (e.pageX - startX);
     });
+
+    castRow.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        castRow.scrollLeft += e.deltaY * 3;
+      },
+      { passive: false },
+    );
   }
 }
 
