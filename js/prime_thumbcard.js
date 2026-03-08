@@ -1,4 +1,3 @@
-
 (function () {
   "use strict";
 
@@ -153,7 +152,6 @@
   `;
   document.head.appendChild(STYLE);
 
-  // ── Card style presets ─────────────────────────────────────────────────────
   const STYLES = [
     {
       id: "cinematic",
@@ -217,15 +215,66 @@
   let cardData = null;
   let canvas = null;
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  function loadImg(src) {
-    return new Promise((res, rej) => {
-      const i = new Image();
-      i.crossOrigin = "anonymous";
-      i.onload = () => res(i);
-      i.onerror = () => rej();
-      i.src = src;
-    });
+  // ── THE FIX: Chrome-safe image loader ─────────────────────────────────────
+  // ROOT CAUSE: Chrome caches TMDB images loaded by normal <img> tags on the
+  // page WITHOUT CORS headers. When canvas later requests the same URL with
+  // crossOrigin="anonymous", Chrome returns the cached non-CORS response and
+  // SILENTLY TAINTS the canvas — toDataURL/toBlob then produces a broken PNG.
+  // Firefox re-fetches properly so it works there but not Chrome.
+  //
+  // SOLUTION: Use fetch() with cache:"no-store" to bypass the HTTP cache
+  // entirely, convert the response to an object URL, then draw that.
+  // This completely sidesteps the CORS cache poisoning issue.
+  function loadImg(tmdbUrl) {
+    // Strategy 1: fetch() with no-store bypasses Chrome's tainted cache
+    return fetch(tmdbUrl, { cache: "no-store", mode: "cors" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve, reject) {
+          var objUrl = URL.createObjectURL(blob);
+          var img = new Image();
+          img.onload = function () {
+            resolve(img); /* keep objUrl alive, GC will handle it */
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(objUrl);
+            reject();
+          };
+          img.src = objUrl;
+        });
+      })
+      .catch(function () {
+        // Strategy 2: crossOrigin + cache-bust param (forces new CORS request)
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = function () {
+            resolve(img);
+          };
+          img.onerror = function () {
+            reject();
+          };
+          img.src =
+            tmdbUrl + (tmdbUrl.includes("?") ? "&" : "?") + "_t=" + Date.now();
+        });
+      })
+      .catch(function () {
+        // Strategy 3: CORS proxy fallback
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = function () {
+            resolve(img);
+          };
+          img.onerror = function () {
+            reject();
+          };
+          img.src = "https://corsproxy.io/?" + encodeURIComponent(tmdbUrl);
+        });
+      });
   }
 
   function rr(ctx, x, y, w, h, r) {
@@ -313,7 +362,6 @@
     ctx.restore();
   }
 
-  // ── Main render ────────────────────────────────────────────────────────────
   async function renderCard(cv, d, s) {
     var W = 900,
       H = 500;
@@ -321,64 +369,69 @@
     cv.height = H;
     var ctx = cv.getContext("2d");
 
-    // BG gradient
+    // Pre-load BOTH images in parallel before drawing anything.
+    // Promise.allSettled ensures one failure never blocks the other.
+    var backdropImg = null,
+      posterImg = null;
+    await Promise.allSettled([
+      d.backdropPath
+        ? loadImg("https://image.tmdb.org/t/p/w780" + d.backdropPath)
+            .then(function (img) {
+              backdropImg = img;
+            })
+            .catch(function () {})
+        : Promise.resolve(),
+      d.posterPath
+        ? loadImg("https://image.tmdb.org/t/p/w500" + d.posterPath)
+            .then(function (img) {
+              posterImg = img;
+            })
+            .catch(function () {})
+        : Promise.resolve(),
+    ]);
+
+    // BG
     var bg = ctx.createLinearGradient(0, 0, W, H);
     bg.addColorStop(0, s.bg0);
     bg.addColorStop(1, s.bg1);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // Backdrop image
-    if (d.backdropPath) {
+    // Backdrop
+    if (backdropImg) {
       try {
-        var bi = await loadImg(
-          "https://image.tmdb.org/t/p/w780" + d.backdropPath,
-        );
-        var ar = bi.width / bi.height,
+        var ar = backdropImg.width / backdropImg.height,
           ca = W / H;
-        var dw = W,
-          dh = H;
-        if (ar > ca) {
-          dh = H;
-          dw = H * ar;
-        } else {
-          dw = W;
-          dh = W / ar;
-        }
+        var dw = ar > ca ? H * ar : W,
+          dh = ar > ca ? H : W / ar;
         ctx.globalAlpha = 1 - s.ov + 0.28;
-        ctx.drawImage(bi, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        ctx.drawImage(backdropImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
         ctx.globalAlpha = 1;
       } catch (e) {}
     }
 
-    // Overlay gradients
+    // Overlays
     var ov1 = ctx.createLinearGradient(0, 0, W, 0);
     ov1.addColorStop(0, "rgba(10,9,8," + s.ov + ")");
     ov1.addColorStop(0.48, "rgba(10,9,8," + s.ov * 0.7 + ")");
     ov1.addColorStop(1, "rgba(10,9,8," + s.ov * 0.35 + ")");
     ctx.fillStyle = ov1;
     ctx.fillRect(0, 0, W, H);
-
     var ov2 = ctx.createLinearGradient(0, H * 0.45, 0, H);
     ov2.addColorStop(0, "transparent");
     ov2.addColorStop(1, "rgba(10,9,8,.98)");
     ctx.fillStyle = ov2;
     ctx.fillRect(0, 0, W, H);
 
-    // Pattern
     drawPattern(ctx, W, H, s.pat);
 
-    // Poster image (right side)
+    // Poster
     var pH = H - 60,
       pW = Math.round(pH * (2 / 3)),
       px = W - pW - 52,
       py = 30;
-    if (d.posterPath) {
+    if (posterImg) {
       try {
-        var pi = await loadImg(
-          "https://image.tmdb.org/t/p/w500" + d.posterPath,
-        );
-        // Shadow
         ctx.save();
         ctx.shadowColor = "rgba(0,0,0,.75)";
         ctx.shadowBlur = 40;
@@ -388,29 +441,41 @@
         ctx.fillStyle = "#111";
         ctx.fill();
         ctx.restore();
-        // Image
         ctx.save();
         rr(ctx, px, py, pW, pH, 10);
         ctx.clip();
-        ctx.drawImage(pi, px, py, pW, pH);
+        ctx.drawImage(posterImg, px, py, pW, pH);
         ctx.restore();
-        // Border
         ctx.save();
         rr(ctx, px, py, pW, pH, 10);
         ctx.strokeStyle = "rgba(255,255,255,.13)";
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.restore();
-        // Accent glow around poster
         ctx.save();
         ctx.shadowColor = s.acc;
         ctx.shadowBlur = 25;
         rr(ctx, px, py, pW, pH, 10);
-        ctx.strokeStyle = "rgba(255,255,255,0)";
+        ctx.strokeStyle = "rgba(0,0,0,0)";
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.restore();
       } catch (e) {}
+    } else {
+      // Placeholder when poster unavailable
+      ctx.save();
+      rr(ctx, px, py, pW, pH, 10);
+      ctx.fillStyle = "#1c1917";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.font = "600 12px 'DM Sans',sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,.2)";
+      ctx.textAlign = "center";
+      ctx.fillText("No image", px + pW / 2, py + pH / 2);
+      ctx.textAlign = "left";
+      ctx.restore();
     }
 
     // Left accent bar
@@ -422,7 +487,7 @@
     ctx.fillStyle = lg;
     ctx.fillRect(38, 80, 3, H - 160);
 
-    // FOUDRI badge top-left
+    // FOUDRI badge
     ctx.save();
     rr(ctx, 46, 28, 108, 28, 6);
     ctx.fillStyle = s.badgeBg;
@@ -445,9 +510,9 @@
     ctx.restore();
 
     // Title
-    var textX = 52;
-    var titleSize = d.title.length > 22 ? 36 : d.title.length > 15 ? 43 : 50;
-    var titleY = H * 0.36;
+    var textX = 52,
+      titleSize = d.title.length > 22 ? 36 : d.title.length > 15 ? 43 : 50,
+      titleY = H * 0.36;
     ctx.save();
     ctx.font = "800 " + titleSize + "px 'Syne',sans-serif";
     ctx.fillStyle = s.txt;
@@ -456,7 +521,7 @@
     wrapText(ctx, d.title, textX, titleY, px - textX - 24, titleSize * 1.15, 2);
     ctx.restore();
 
-    // Tagline / overview snippet
+    // Tagline
     var snip = d.tagline || (d.overview ? d.overview.slice(0, 72) + "…" : "");
     if (snip) {
       ctx.save();
@@ -464,33 +529,33 @@
       ctx.fillStyle = s.sub;
       ctx.shadowColor = "rgba(0,0,0,.6)";
       ctx.shadowBlur = 8;
-      var short = snip.slice(0, 68) + (snip.length > 68 ? "…" : "");
-      ctx.fillText(short, textX, titleY + titleSize * 1.42);
+      ctx.fillText(
+        snip.slice(0, 68) + (snip.length > 68 ? "…" : ""),
+        textX,
+        titleY + titleSize * 1.42,
+      );
       ctx.restore();
     }
 
-    // Meta pills
-    var pillY = H - 82;
-    var pills = [];
+    // Pills
+    var pillY = H - 82,
+      pills = [];
     if (d.year) pills.push(d.year);
     if (d.runtime) pills.push("⏱ " + d.runtime);
     if (d.rating) pills.push("★ " + d.rating);
     if (d.language) pills.push(d.language.toUpperCase());
     if (d.genre) pills.push(d.genre);
-
-    // Divider line
     var divGrad = ctx.createLinearGradient(textX, 0, textX + 300, 0);
     divGrad.addColorStop(0, s.acc);
     divGrad.addColorStop(1, "transparent");
     ctx.fillStyle = divGrad;
     ctx.fillRect(textX, pillY - 28, 300, 1.5);
-
     var px2 = textX;
     ctx.save();
     ctx.font = "600 11.5px 'Syne',sans-serif";
     pills.forEach(function (p) {
-      var m = ctx.measureText(p).width;
-      var bw = m + 20,
+      var m = ctx.measureText(p).width,
+        bw = m + 20,
         bh = 24,
         br = 5;
       rr(ctx, px2, pillY - bh + 6, bw, bh, br);
@@ -505,15 +570,13 @@
     });
     ctx.restore();
 
-    // Bottom watermark bar
+    // Watermark
     ctx.save();
     var bBar = ctx.createLinearGradient(0, H - 40, 0, H);
     bBar.addColorStop(0, "transparent");
     bBar.addColorStop(1, "rgba(0,0,0,.88)");
     ctx.fillStyle = bBar;
     ctx.fillRect(0, H - 40, W, 40);
-
-    // "Watch on FOUDRI." centred
     ctx.font = "600 11px 'DM Sans',sans-serif";
     ctx.fillStyle = "rgba(255,255,255,.38)";
     var watchW = ctx.measureText("Watch on ").width;
@@ -522,19 +585,16 @@
     ctx.font = "800 11px 'Syne',sans-serif";
     ctx.fillStyle = s.acc;
     ctx.fillText("FOUDRI.", startX + watchW, H - 9);
-
     ctx.font = "600 10px 'DM Sans',sans-serif";
     ctx.fillStyle = "rgba(255,255,255,.18)";
     ctx.fillText("foudri.vercel.app", W - 108, H - 9);
     ctx.restore();
 
-    // Scanlines
+    // Scanlines + vignette
     for (var sy = 0; sy < H; sy += 4) {
       ctx.fillStyle = "rgba(0,0,0,.03)";
       ctx.fillRect(0, sy, W, 2);
     }
-
-    // Vignette
     var vig = ctx.createRadialGradient(
       W / 2,
       H / 2,
@@ -549,21 +609,16 @@
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ── Show preview overlay ───────────────────────────────────────────────────
   async function showPreview(data) {
     cardData = data;
     var old = document.getElementById("fcOverlay");
     if (old) old.remove();
-
     var ov = document.createElement("div");
     ov.id = "fcOverlay";
     ov.innerHTML = [
       '<div id="fcBox">',
       '<div class="fc-head">',
-      '<div class="fc-head-title">',
-      '<i class="fas fa-image" style="color:#e8512a"></i>',
-      "FOUDRI<em>.</em> Card Generator",
-      "</div>",
+      '<div class="fc-head-title"><i class="fas fa-image" style="color:#e8512a"></i>FOUDRI<em>.</em> Card Generator</div>',
       '<button class="fc-x" id="fcX"><i class="fas fa-times"></i></button>',
       "</div>",
       '<div class="fc-pills" id="fcPills">',
@@ -579,12 +634,8 @@
         );
       }).join(""),
       "</div>",
-      '<div class="fc-canvas-wrap">',
-      '<canvas id="fcCanvas"></canvas>',
-      '<div class="fc-loading" id="fcLoad">',
-      '<div class="fc-spin"></div>',
-      "<span>Rendering card…</span>",
-      "</div>",
+      '<div class="fc-canvas-wrap"><canvas id="fcCanvas"></canvas>',
+      '<div class="fc-loading" id="fcLoad"><div class="fc-spin"></div><span>Rendering card…</span></div>',
       "</div>",
       '<div class="fc-actions">',
       '<button class="fc-btn-dl" id="fcDl"><i class="fas fa-download"></i> Download PNG</button>',
@@ -595,7 +646,6 @@
     document.body.appendChild(ov);
     canvas = document.getElementById("fcCanvas");
 
-    // Close handlers
     document.getElementById("fcX").onclick = function () {
       ov.remove();
     };
@@ -603,7 +653,6 @@
       if (e.target === ov) ov.remove();
     };
 
-    // Style switcher
     document.getElementById("fcPills").onclick = async function (e) {
       var pill = e.target.closest(".fc-pill");
       if (!pill) return;
@@ -614,20 +663,20 @@
       await gen();
     };
 
-    // Download
     document.getElementById("fcDl").onclick = function () {
       if (!canvas) return;
       var a = document.createElement("a");
-      var slug = (cardData.title || "foudri")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .slice(0, 32);
-      a.download = "foudri-" + slug + ".png";
+      a.download =
+        "foudri-" +
+        (cardData.title || "card")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .slice(0, 32) +
+        ".png";
       a.href = canvas.toDataURL("image/png", 1.0);
       a.click();
     };
 
-    // Copy to clipboard
     document.getElementById("fcCopy").onclick = function () {
       if (!canvas) return;
       canvas.toBlob(async function (blob) {
@@ -645,9 +694,8 @@
             }, 2200);
           }
         } catch (err) {
-          var btn2 = document.getElementById("fcCopy");
-          if (btn2)
-            btn2.innerHTML = '<i class="fas fa-times"></i> Not supported';
+          var b = document.getElementById("fcCopy");
+          if (b) b.innerHTML = '<i class="fas fa-times"></i> Not supported';
         }
       }, "image/png");
     };
@@ -661,47 +709,40 @@
     try {
       await renderCard(canvas, cardData, STYLES[styleIdx]);
     } catch (e) {
-      console.error("FOUDRI card render error:", e);
+      console.error("FOUDRI card error:", e);
     }
     if (ld) ld.style.display = "none";
   }
 
-  // ── Patch renderInfoTab ────────────────────────────────────────────────────
   function buildAndInjectBtn(details, type) {
-    // Called right after the original renderInfoTab has written the DOM
     setTimeout(function () {
       var actions = document.querySelector("#tab-info .modal-actions");
-      if (!actions) return;
-      if (actions.querySelector(".foudri-dl-card-btn")) return; // already injected
-
+      if (!actions || actions.querySelector(".foudri-dl-card-btn")) return;
       var btn = document.createElement("button");
       btn.className = "foudri-dl-card-btn";
       btn.title = "Generate a shareable FOUDRI poster card";
       btn.innerHTML =
         '<div class="shimmer"></div><i class="fas fa-image"></i> Save Card';
-
       btn.addEventListener("click", function () {
-        var d = details;
-        var runtime = "";
+        var d = details,
+          runtime = "";
         if (type === "movie" && d.runtime) {
           var h = Math.floor(d.runtime / 60),
             m = d.runtime % 60;
           runtime = h ? h + "h " + m + "m" : m + "m";
-        } else if (type === "tv" && d.number_of_seasons) {
+        } else if (type === "tv" && d.number_of_seasons)
           runtime =
             d.number_of_seasons +
             " Season" +
             (d.number_of_seasons > 1 ? "s" : "");
-        }
         var genre = "";
-        if (d.genres && d.genres.length) {
+        if (d.genres && d.genres.length)
           genre = d.genres
             .slice(0, 2)
             .map(function (g) {
               return g.name;
             })
             .join(" · ");
-        }
         showPreview({
           title: d.title || d.name || "Untitled",
           tagline: d.tagline || "",
@@ -716,7 +757,6 @@
           type: type,
         });
       });
-
       actions.appendChild(btn);
     }, 0);
   }
@@ -725,7 +765,6 @@
     if (typeof window.renderInfoTab !== "function") return false;
     if (window.__fcPatched) return true;
     window.__fcPatched = true;
-
     var _orig = window.renderInfoTab;
     window.renderInfoTab = function (details, credits, type) {
       _orig(details, credits, type);
