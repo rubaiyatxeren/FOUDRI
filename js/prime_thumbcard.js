@@ -722,7 +722,7 @@
       btn.className = "foudri-dl-card-btn";
       btn.title = "Generate a shareable FOUDRI poster card";
       btn.innerHTML =
-        '<div class="shimmer"></div><i class="fas fa-image"></i> Save Card';
+        '<div class="shimmer"></div><i class="fas fa-image"></i> Save Poster';
       btn.addEventListener("click", function () {
         var d = details,
           runtime = "";
