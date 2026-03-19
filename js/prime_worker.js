@@ -119,14 +119,6 @@ const SERVERS = [
         : `https://player.embed-api.stream/?id=${id}`,
   },
   {
-    // SmashyStream: multi-language, Hindi dub, NL, and more player variants
-    name: "SmashyStream",
-    url: (t, id, s, e) =>
-      s
-        ? `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${s}&episode=${e || 1}`
-        : `https://embed.smashystream.com/playere.php?tmdb=${id}`,
-  },
-  {
     // SuperEmbed directstream: VIP HLS, quality selector, subtitles, 1 popup max
     name: "SuperEmbed HLS",
     url: (t, id, s, e) =>
@@ -135,52 +127,12 @@ const SERVERS = [
         : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
   },
   {
-    // v2.apimdb.net — clean REST-style TMDB embed
-    name: "ApiMDB",
-    url: (t, id, s, e) =>
-      s
-        ? `https://v2.apimdb.net/e/tmdb/tv/${id}/${s}/${e || 1}/`
-        : `https://v2.apimdb.net/e/movie/${id}`,
-  },
-  {
     // curtstream — TMDB-native, fast CDN
     name: "CurtStream",
     url: (t, id, s, e) =>
       s
         ? `https://curtstream.com/series/tmdb/${id}/${s}/${e || 1}/`
         : `https://curtstream.com/movies/tmdb/${id}`,
-  },
-  {
-    // databasegdriveplayer — GDrive-backed, good for older content
-    name: "DBGDrive",
-    url: (t, id, s, e) =>
-      s
-        ? `https://databasegdriveplayer.co/player.php?type=series&tmdb=${id}&season=${s}&episode=${e || 1}`
-        : `https://databasegdriveplayer.co/player.php?type=movie&tmdb=${id}`,
-  },
-  {
-    // moviewp — SuperEmbed-compatible param format
-    name: "MovieWP",
-    url: (t, id, s, e) =>
-      s
-        ? `https://moviewp.com/se.php?video_id=${id}&tmdb=1&s=${s}&e=${e || 1}`
-        : `https://moviewp.com/se.php?video_id=${id}&tmdb=1`,
-  },
-  {
-    // VidSrc.nl — Dutch/European CDN node, fast for non-US traffic
-    name: "VidSrc.nl",
-    url: (t, id, s, e) =>
-      s
-        ? `https://player.vidsrc.nl/embed/tv/${id}/${s}/${e || 1}`
-        : `https://player.vidsrc.nl/embed/movie/${id}`,
-  },
-  {
-    // rive.host — clean minimal player, TMDB-native, low ads
-    name: "Rive",
-    url: (t, id, s, e) =>
-      s
-        ? `https://rive.host/tv/${id}/${s}/${e || 1}`
-        : `https://rive.host/movie/${id}`,
   },
 ];
 
