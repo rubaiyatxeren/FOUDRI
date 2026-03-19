@@ -74,6 +74,63 @@ const SERVERS = [
         ? `https://gdriveplayer.to/embed2.php?imdb=${id}&s=${s}&e=${e || 1}`
         : `https://gdriveplayer.to/embed2.php?imdb=${id}`,
   },
+    // ── New servers ──
+  {
+    name: "Embed.su",
+    url: (t, id, s, e) =>
+      s
+        ? `https://embed.su/embed/tv/${id}/${s}/${e || 1}`
+        : `https://embed.su/embed/movie/${id}`,
+  },
+  {
+    name: "2Embed.stream",
+    url: (t, id, s, e) =>
+      s
+        ? `https://www.2embed.stream/embed/tv/${id}/${s}/${e || 1}`
+        : `https://www.2embed.stream/embed/movie/${id}`,
+  },
+  {
+    name: "MoviesAPI",
+    url: (t, id, s, e) =>
+      s
+        ? `https://moviesapi.club/tv/${id}-${s}-${e || 1}`
+        : `https://moviesapi.club/movie/${id}`,
+  },
+  {
+    name: "NontonGo",
+    url: (t, id, s, e) =>
+      s
+        ? `https://www.NontonGo.net/embed/tv/${id}/${s}/${e || 1}`
+        : `https://www.NontonGo.net/embed/movie/${id}`,
+  },
+  {
+    name: "EmbedAPI",
+    url: (t, id, s, e) =>
+      s
+        ? `https://player.embed-api.stream/?id=${id}&s=${s}&e=${e || 1}`
+        : `https://player.embed-api.stream/?id=${id}`,
+  },
+  {
+    name: "CineSrc",
+    url: (t, id, s, e) =>
+      s
+        ? `https://cinesrc.st/embed/tv/${id}/${s}/${e || 1}`
+        : `https://cinesrc.st/embed/movie/${id}`,
+  },
+  {
+    name: "VidSrc.icu",
+    url: (t, id, s, e) =>
+      s
+        ? `https://vidsrc.icu/embed/tv/${id}/${s}/${e || 1}`
+        : `https://vidsrc.icu/embed/movie/${id}`,
+  },
+  {
+    name: "VidSrc.rip",
+    url: (t, id, s, e) =>
+      s
+        ? `https://vidsrc.rip/embed/tv/${id}/${s}/${e || 1}`
+        : `https://vidsrc.rip/embed/movie/${id}`,
+  },
 ];
 
 let heroMovies = [],
