@@ -68,53 +68,11 @@ const SERVERS = [
         : `https://vidsrc.xyz/embed/movie/${id}`,
   },
   {
-    name: "Embed.su",
-    url: (t, id, s, e) =>
-      s
-        ? `https://embed.su/embed/tv/${id}/${s}/${e || 1}`
-        : `https://embed.su/embed/movie/${id}`,
-  },
-  {
-    name: "Moviesapi.win",
-    url: (t, id, s, e) =>
-      s
-        ? `https://moviesapi.club/tv/${id}-${s}-${e || 1}`
-        : `https://moviesapi.club/movie/${id}`,
-  },
-  {
-    name: "Nomo69",
-    url: (t, id, s, e) =>
-      s
-        ? `https://www.nomo69.com/tv/${id}/${s}/${e || 1}`
-        : `https://www.nomo69.com/movie/${id}`,
-  },
-  {
     name: "GdrivePlayer",
     url: (t, id, s, e) =>
       s
         ? `https://gdriveplayer.to/embed2.php?imdb=${id}&s=${s}&e=${e || 1}`
         : `https://gdriveplayer.to/embed2.php?imdb=${id}`,
-  },
-  {
-    name: "PrimeWire",
-    url: (t, id, s, e) =>
-      s
-        ? `https://www.primewire.tf/embed/tv?tmdb=${id}&season=${s}&episode=${e || 1}`
-        : `https://www.primewire.tf/embed/movie?tmdb=${id}`,
-  },
-  {
-    name: "WarezCDN",
-    url: (t, id, s, e) =>
-      s
-        ? `https://embed.warezcdn.link/get-player.php?id=${id}&sv=1&s=${s}&e=${e || 1}`
-        : `https://embed.warezcdn.link/get-player.php?id=${id}&sv=1`,
-  },
-  {
-    name: "SmashyStream",
-    url: (t, id, s, e) =>
-      s
-        ? `https://embed.smashystream.com/playere.php?tmdb=${id}&s=${s}&e=${e || 1}`
-        : `https://embed.smashystream.com/playere.php?tmdb=${id}`,
   },
 ];
 
