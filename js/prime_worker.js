@@ -2152,3 +2152,89 @@ document.addEventListener("keydown", (e) => {
     refreshAnimationContent();
   }
 });
+// ==================== MODAL BACK BUTTON HANDLER ====================
+
+// Store modal state for history API
+let modalHistoryState = null;
+
+// Function to handle back button press
+function handleModalBackButton() {
+  if (document.getElementById("modal").classList.contains("open")) {
+    closeModal();
+
+    // Remove the history state we added
+    if (modalHistoryState) {
+      window.history.replaceState(null, "", window.location.href);
+      modalHistoryState = null;
+    }
+    return true;
+  }
+  return false;
+}
+
+// Override the openContent function to add history state
+const originalOpenContent = window.openContent;
+window.openContent = async function (id, type, autoplay = false) {
+  // Call original function
+  await originalOpenContent(id, type, autoplay);
+
+  // Add a history state so back button works
+  if (!modalHistoryState) {
+    modalHistoryState = { modalOpen: true };
+    window.history.pushState(modalHistoryState, "", window.location.href);
+  }
+};
+
+// Listen for popstate event (back button)
+window.addEventListener("popstate", function (event) {
+  if (handleModalBackButton()) {
+    // Modal was closed, prevent default back navigation
+    return;
+  }
+  // If modal wasn't open, allow normal back navigation
+});
+
+// Also handle when modal is closed manually
+const originalCloseModal = window.closeModal;
+window.closeModal = function () {
+  originalCloseModal();
+
+  // Clear history state
+  if (modalHistoryState) {
+    // Replace state to remove the modal entry
+    window.history.replaceState(null, "", window.location.href);
+    modalHistoryState = null;
+  }
+};
+
+// Handle escape key (already exists, but let's ensure it also handles history)
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (handleModalBackButton()) {
+      e.preventDefault();
+    }
+  }
+});
+
+// Handle touch back gesture on mobile (additional safety)
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener("touchstart", (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+document.addEventListener("touchend", (e) => {
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+
+  // Detect left swipe (back gesture) from left edge
+  if (touchStartX < 50 && deltaX > 50 && Math.abs(deltaY) < 100) {
+    if (handleModalBackButton()) {
+      e.preventDefault();
+    }
+  }
+});
