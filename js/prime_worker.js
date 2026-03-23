@@ -74,27 +74,12 @@ const SERVERS = [
         ? `https://gdriveplayer.to/embed2.php?imdb=${id}&s=${s}&e=${e || 1}`
         : `https://gdriveplayer.to/embed2.php?imdb=${id}`,
   },
-    // ── New servers ──
-  {
-    name: "Embed.su",
-    url: (t, id, s, e) =>
-      s
-        ? `https://embed.su/embed/tv/${id}/${s}/${e || 1}`
-        : `https://embed.su/embed/movie/${id}`,
-  },
   {
     name: "2Embed.stream",
     url: (t, id, s, e) =>
       s
         ? `https://www.2embed.stream/embed/tv/${id}/${s}/${e || 1}`
         : `https://www.2embed.stream/embed/movie/${id}`,
-  },
-  {
-    name: "MoviesAPI",
-    url: (t, id, s, e) =>
-      s
-        ? `https://moviesapi.club/tv/${id}-${s}-${e || 1}`
-        : `https://moviesapi.club/movie/${id}`,
   },
   {
     name: "CineSrc",
@@ -111,28 +96,11 @@ const SERVERS = [
         : `https://vidsrc.icu/embed/movie/${id}`,
   },
   {
-    // Multi-server aggregator: 10+ sources, auto-fetches TMDB metadata, fast HLS
     name: "EmbedAPI",
     url: (t, id, s, e) =>
       s
         ? `https://player.embed-api.stream/?id=${id}&s=${s}&e=${e || 1}`
         : `https://player.embed-api.stream/?id=${id}`,
-  },
-  {
-    // SuperEmbed directstream: VIP HLS, quality selector, subtitles, 1 popup max
-    name: "SuperEmbed HLS",
-    url: (t, id, s, e) =>
-      s
-        ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e || 1}`
-        : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
-  },
-  {
-    // curtstream — TMDB-native, fast CDN
-    name: "CurtStream",
-    url: (t, id, s, e) =>
-      s
-        ? `https://curtstream.com/series/tmdb/${id}/${s}/${e || 1}/`
-        : `https://curtstream.com/movies/tmdb/${id}`,
   },
 ];
 
