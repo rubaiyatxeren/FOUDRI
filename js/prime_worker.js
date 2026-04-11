@@ -1419,11 +1419,115 @@ window.playTrailer = (videoId) => {
 };
 
 function renderServers() {
-  document.getElementById("serverRow").innerHTML = SERVERS.map(
-    (s, i) =>
-      `<button class="srv-btn${i === 0 ? " active" : ""}" onclick="switchServer(${i})">${s.name}</button>`,
-  ).join("");
+  const serverRow = document.getElementById("serverRow");
+  if (!serverRow) return;
+
+  // Option 1: Modern grid buttons (Recommended)
+  serverRow.innerHTML = `
+    <div class="servers-section">
+      <div class="servers-header">
+        <div class="servers-title">
+          <i class="fas fa-server"></i>
+          <span>Select Server</span>
+          <span class="server-badge">${SERVERS.length} available</span>
+        </div>
+        <div class="server-latency good" id="serverLatency">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Auto</span>
+        </div>
+      </div>
+      <div class="servers-grid" id="serversGrid">
+        ${SERVERS.map(
+          (s, i) => `
+          <button class="server-btn-modern${i === 0 ? " active" : ""}" data-server-index="${i}" onclick="switchServerModern(${i})">
+            <i class="fas fa-${getServerIcon(s.name)}"></i>
+            <span>${s.name}</span>
+          </button>
+        `
+        ).join("")}
+      </div>
+      <div class="server-info-bar">
+        <span><i class="fas fa-shield-alt"></i> All servers are secure</span>
+        <span><i class="fas fa-sync-alt"></i> Auto-switch on fail</span>
+      </div>
+    </div>
+  `;
 }
+
+// Helper function to get server icons
+function getServerIcon(serverName) {
+  const icons = {
+    VidStorm: "cloud",
+    VidRock: "rocket",
+    AutoEmbed: "play-circle",
+    VidLink: "link",
+    "VidSrc.to": "video",
+    "2Embed": "code-branch",
+    "VidSrc.me": "film",
+    "VidSrc.pro": "play",
+    SuperEmbed: "star",
+    "Vidsrc.xyz": "globe",
+    GdrivePlayer: "google-drive",
+    "2Embed.stream": "water",
+    CineSrc: "tv",
+    "VidSrc.icu": "hospital",
+    EmbedAPI: "cogs"
+  };
+  return icons[serverName] || "server";
+}
+
+// Modern server switcher with animation
+window.switchServerModern = function(idx) {
+  currentServer = idx;
+  
+  // Update button styles with animation
+  document.querySelectorAll(".server-btn-modern").forEach((btn, i) => {
+    if (i === idx) {
+      btn.classList.add("active");
+      // Add ripple effect
+      const ripple = document.createElement("span");
+      ripple.style.position = "absolute";
+      ripple.style.background = "rgba(255,255,255,0.3)";
+      ripple.style.borderRadius = "50%";
+      ripple.style.transform = "scale(0)";
+      ripple.style.animation = "ripple 0.6s linear";
+      ripple.style.pointerEvents = "none";
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+  
+  // Update latency indicator (mock)
+  const latencies = [32, 45, 67, 89, 102, 45, 78, 123, 56, 89, 67, 45, 78, 90, 56];
+  const latency = latencies[idx] || Math.floor(Math.random() * 100) + 30;
+  const latencyEl = document.getElementById("serverLatency");
+  if (latencyEl) {
+    let status = "good";
+    let statusText = "Fast";
+    if (latency > 80) { status = "fair"; statusText = "Fair"; }
+    if (latency > 150) { status = "slow"; statusText = "Slow"; }
+    latencyEl.className = `server-latency ${status}`;
+    latencyEl.innerHTML = `<i class="fas fa-tachometer-alt"></i><span>${latency}ms · ${statusText}</span>`;
+  }
+  
+  // Show toast
+  showToast(`Switched to ${SERVERS[idx].name}`, "fa-exchange-alt");
+  
+  // Reload player with new server
+  loadPlayer();
+};
+
+// Add ripple animation CSS
+const rippleStyle = document.createElement("style");
+rippleStyle.textContent = `
+  @keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+  }
+  .server-btn-modern { position: relative; overflow: hidden; }
+`;
+document.head.appendChild(rippleStyle);
 function loadPlayer(s, e) {
   if (s !== undefined) currentSeason = s;
   if (e !== undefined) currentEpisode = e;
