@@ -15,8 +15,8 @@ const SERVERS = [
     name: "VidRock",
     url: (t, id, s, e) =>
       s
-        ? `https://vidrock.pm/embed/tv/${id}/${s}/${e || 1}`
-        : `https://vidrock.pm/embed/movie/${id}`,
+        ? `https://vidrock.net/embed/tv/${id}/${s}/${e || 1}`
+        : `https://vidrock.net/embed/movie/${id}`,
   },
   {
     name: "AutoEmbed",
