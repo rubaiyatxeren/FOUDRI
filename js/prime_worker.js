@@ -11,6 +11,13 @@ const SERVERS = [
         ? `https://vidstorm.ru/embed/tv/${id}/${s}/${e || 1}`
         : `https://vidstorm.ru/embed/${t}/${id}`,
   },
+    {
+    name: "VidRock",
+    url: (t, id, s, e) =>
+      s
+        ? `https://vidrock.pm/embed/tv/${id}/${s}/${e || 1}`
+        : `https://vidrock.pm/embed/movie/${id}`,
+  },
   {
     name: "AutoEmbed",
     url: (t, id, s, e) =>
