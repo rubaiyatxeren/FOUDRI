@@ -948,7 +948,7 @@ function renderInfoTab(d, credits, type) {
           </button>
           ${type === "tv" ? `<button class="modal-action-btn" onclick="switchTab('episodes',document.querySelector('#epTabBtn'))"><i class="fas fa-list"></i> Episodes</button>` : ""}
           <button class="modal-action-btn" onclick="switchTab('similar',document.querySelectorAll('.modal-tab')[2])"><i class="fas fa-th-large"></i> More Like This</button>
-          ${type === "movie" ? `<a href="https://dl.vidsrc.vip/movie/${d.id}" target="_blank" class="modal-action-btn--dl"><i class="fas fa-download"></i> Download HD</a>` : ""}
+          ${type === "movie" ? `<a href="https://vidvault.ru/movie/${d.id}" target="_blank" class="modal-action-btn--dl"><i class="fas fa-download"></i> Download HD</a>` : ""}
         </div>
 
         ${
@@ -1533,7 +1533,7 @@ async function loadEpisodes(season, showId) {
                 <button class="episode-quick-play" onclick="event.stopPropagation();playEpisode(${season}, ${num})">
                   <i class="fas fa-play"></i>
                 </button>
-                <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/${num}" 
+                <a href="https://vidvault.ru/tv/${showId}/${season}/${num}" 
                    target="_blank" 
                    class="episode-quick-download" 
                    onclick="event.stopPropagation()"
@@ -1582,7 +1582,7 @@ async function loadEpisodes(season, showId) {
               <button class="episode-action-play" onclick="event.stopPropagation();playEpisode(${season}, ${num})">
                 <i class="fas fa-play"></i> Play Episode
               </button>
-              <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/${num}" 
+              <a href="https://vidvault.ru/tv/${showId}/${season}/${num}" 
                  target="_blank" 
                  class="episode-action-download" 
                  onclick="event.stopPropagation()">
@@ -1613,7 +1613,7 @@ async function loadEpisodes(season, showId) {
               <button class="season-play-all" onclick="playEpisode(${season}, 1)">
                 <i class="fas fa-play-circle"></i> Play from Start
               </button>
-              <a href="https://dl.vidsrc.vip/tv/${showId}/${season}/1" target="_blank" class="season-download-all">
+              <a href="https://vidvault.ru/tv/${showId}/${season}/1" target="_blank" class="season-download-all">
                 <i class="fas fa-download"></i> Download Season
               </a>
             </div>
